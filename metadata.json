@@ -1,0 +1,6 @@
+{
+  "name": "Artisan’s Corner",
+  "description": "An artisanal online marketplace for handmade crafts with Buyer, Seller, and Admin portals, live 3D craft studio, and automated commission management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

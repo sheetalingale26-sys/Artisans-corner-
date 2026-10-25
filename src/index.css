@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --warm-ivory: #F4EEE6;
+    --soft-cream: #EFE7DC;
+    --terracotta: #A86F47;
+    --terracotta-dark: #8F5732;
+    --terracotta-soft: #F6EDE6;
+    --sage: #6B7A52;
+    --sage-dark: #556241;
+    --sage-soft: #EFF3EB;
+    --earth-brown: #8B5E3C;
+    --charcoal-brown: #28231F;
+    --cream-50: #F4EEE6;
+    --cream-100: #EFE7DC;
+    --cream-200: #E6DCCD;
+    --cream-300: #DDD1BE;
+  }
+
+  html, body {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  body {
+    background-color: #F4EEE6;
+    color: #28231F;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  h1, h2, h3, .font-serif {
+    font-family: 'Fraunces', Georgia, serif;
+  }
+
+  .font-signature {
+    font-family: 'Caveat', cursive;
+  }
+}
+
+/* Responsive utility for clean touch-friendly scrolling */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Custom scrollbars matching artisan theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #F8F4EE;
+}
+::-webkit-scrollbar-thumb {
+  background: #D9CEBA;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #A86F47;
+}
