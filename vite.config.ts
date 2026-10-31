@@ -15,9 +15,8 @@ export default defineConfig(() => {
     },
     server: {
       fs: {
-        // Explicitly allow the real project root (fixes 403 when Vite is launched
-        // via the Windows 8.3 short path ARTISA~1 vs the actual long path)
-        allow: [projectRoot],
+        // Explicitly allow both project root and parent to handle Windows 8.3 short path (ARTISA~1) vs long path
+        allow: [projectRoot, path.resolve(projectRoot, '..')],
       },
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modify-file watching is disabled to prevent flickering during agent edits.

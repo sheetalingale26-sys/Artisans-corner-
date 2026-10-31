@@ -119,7 +119,7 @@ export const CartDrawer: React.FC = () => {
                         <h4 className="text-xs font-bold text-[#2A2521] truncate mt-0.5">
                           {item.product.title}
                         </h4>
-                        <div className="text-xs font-serif font-bold text-[#2A2521] mt-1">
+                        <div className="text-xs font-bold text-[#2A2521] mt-1">
                           ${item.product.price}
                         </div>
                       </div>
@@ -133,7 +133,7 @@ export const CartDrawer: React.FC = () => {
                           >
                             −
                           </button>
-                          <span className="px-2.5 py-0.5 font-mono text-[11px] font-semibold text-[#2A2521]">
+                          <span className="px-2.5 py-0.5 text-[11px] font-semibold text-[#2A2521]">
                             {item.quantity}
                           </span>
                           <button
@@ -176,7 +176,7 @@ export const CartDrawer: React.FC = () => {
                 {/* Subtotal */}
                 <div className="flex items-baseline justify-between text-sm">
                   <span className="text-[#645D56] font-medium">Estimated Subtotal:</span>
-                  <span className="font-serif text-xl font-bold text-[#2A2521]">
+                  <span className="text-xl font-bold text-[#2A2521]">
                     ${cartSubtotal.toFixed(2)}
                   </span>
                 </div>

@@ -19,6 +19,8 @@ import { WishlistPage } from './components/buyer/WishlistPage';
 import { AuthPage } from './components/auth/AuthPage';
 import { BecomeSellerModal } from './components/seller/BecomeSellerModal';
 
+import { ErrorBoundary, Studio3DErrorBoundary, AdminErrorBoundary } from './components/common/ErrorBoundary';
+
 const MainLayout: React.FC = () => {
   const { activeTab, selectedProduct, setSelectedProduct } = useApp();
 
@@ -27,12 +29,24 @@ const MainLayout: React.FC = () => {
       <Header />
 
       <main className="flex-1">
-        {activeTab === 'marketplace' && <Marketplace />}
+        {activeTab === 'marketplace' && (
+          <ErrorBoundary sectionName="Curated Marketplace">
+            <Marketplace />
+          </ErrorBoundary>
+        )}
         {activeTab === 'wishlist' && <WishlistPage />}
-        {activeTab === 'studio' && <ArtisanStudio3D />}
+        {activeTab === 'studio' && (
+          <Studio3DErrorBoundary>
+            <ArtisanStudio3D />
+          </Studio3DErrorBoundary>
+        )}
         {activeTab === 'orders' && <OrderTrackingView />}
         {activeTab === 'seller-dashboard' && <SellerDashboard />}
-        {activeTab === 'admin-dashboard' && <AdminDashboard />}
+        {activeTab === 'admin-dashboard' && (
+          <AdminErrorBoundary>
+            <AdminDashboard />
+          </AdminErrorBoundary>
+        )}
         {activeTab === 'login' && <AuthPage initialMode="login" />}
         {activeTab === 'register' && <AuthPage initialMode="register" />}
       </main>
@@ -56,8 +70,10 @@ const MainLayout: React.FC = () => {
 
 export default function App() {
   return (
-    <AppProvider>
-      <MainLayout />
-    </AppProvider>
+    <ErrorBoundary sectionName="Artisan's Corner Platform">
+      <AppProvider>
+        <MainLayout />
+      </AppProvider>
+    </ErrorBoundary>
   );
 }

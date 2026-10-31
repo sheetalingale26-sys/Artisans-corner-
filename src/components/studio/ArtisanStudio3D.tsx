@@ -486,7 +486,7 @@ export const ArtisanStudio3D: React.FC = () => {
                     <Layers className="w-3 h-3" />
                     Craft Explode
                   </span>
-                  <span className="text-gray-300 font-mono">{Math.round(explodeRatio * 100)}%</span>
+                  <span className="text-gray-300 font-semibold">{Math.round(explodeRatio * 100)}%</span>
                 </div>
                 <input
                   type="range"

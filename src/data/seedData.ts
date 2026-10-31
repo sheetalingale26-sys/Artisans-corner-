@@ -54,6 +54,17 @@ export const SEED_USERS: User[] = [
     status: 'active'
   },
   {
+    id: 'user-admin-2',
+    name: 'Sheetal Ingale',
+    email: 'sheetalingale26@gmail.com',
+    role: 'admin',
+    isSellerApproved: false,
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+    phone: '+1 (555) 345-6789',
+    joinedDate: '2025-01-01',
+    status: 'active'
+  },
+  {
     id: 'user-applicant-1',
     name: 'Hannah Morales',
     email: 'hannah.morales@loomtextiles.co',
@@ -79,6 +90,17 @@ export const SEED_SELLER_APPLICATIONS: SellerApplication[] = [
     location: 'Taos, New Mexico',
     phone: '+1 (555) 432-8871',
     portfolioUrl: 'https://instagram.com/desertloomweavings',
+    userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+    workshopAddress: '14 Camino Del Monte, Taos, NM 87571',
+    workshopPhotoUrl: 'https://images.unsplash.com/photo-1596464716127-f2a829822321?auto=format&fit=crop&w=1000&q=80',
+    yearsOfExperience: '12+ years',
+    sampleTitle: 'Hand-Woven Churro Wool Tapestry',
+    samplePrice: 285,
+    sampleCategory: 'Textiles & Fiber Art',
+    sampleDescription: 'Hand-spun churro sheep wool woven on traditional floor loom with natural cochineal and wild indigo dyes.',
+    sampleMaterials: '100% Churro Wool, Natural Indigo, Wild Cochineal',
+    sampleImageUrl: 'https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&w=1000&q=80',
+    sampleLeadTime: 'Made to order (2-3 weeks)',
     bankDetails: {
       bankName: 'Rio Grande Credit Union',
       accountHolder: 'Hannah Morales',

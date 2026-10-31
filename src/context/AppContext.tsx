@@ -24,14 +24,16 @@ import {
   SEED_COMMISSIONS,
   SEED_SELLER_APPLICATIONS
 } from '../data/seedData';
-import { auth, initAnalytics } from '../lib/firebase';
+import { auth, db, googleProvider, initAnalytics } from '../lib/firebase';
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  updateProfile
+  updateProfile,
+  signInWithPopup
 } from 'firebase/auth';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 
 interface Toast {
   id: string;
@@ -43,7 +45,8 @@ export const AUTHORIZED_ADMIN_EMAILS = [
   'admin@artisanscorner.org',
   'marcus.vance@artisanscorner.org',
   'director@artisanscorner.org',
-  'admin@artisans-corner.com'
+  'admin@artisans-corner.com',
+  'sheetalingale26@gmail.com'
 ];
 
 interface AppContextType {
@@ -53,10 +56,12 @@ interface AppContextType {
   authLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   switchRole: (role: UserRole) => void;
   isSellerApproved: boolean;
   isAdmin: boolean;
+  AUTHORIZED_ADMIN_EMAILS: string[];
 
   // Users management
   users: User[];
@@ -186,8 +191,58 @@ function saveStorage<T>(key: string, data: T) {
   }
 }
 
+export const getCategoryWorkshopDefault = (category?: string) => {
+  switch (category) {
+    case 'Ceramics & Pottery':
+      return 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=1000&q=80';
+    case 'Woodwork & Carving':
+      return 'https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=1000&q=80';
+    case 'Jewelry & Metals':
+      return 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=1000&q=80';
+    case 'Textiles & Weaving':
+    case 'Textiles & Fiber Art':
+      return 'https://images.unsplash.com/photo-1596464716127-f2a829822321?auto=format&fit=crop&w=1000&q=80';
+    case 'Glassblowing & Stained Glass':
+      return 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=1000&q=80';
+    case 'Leathercraft & Bookbinding':
+      return 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&w=1000&q=80';
+    default:
+      return 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=1000&q=80';
+  }
+};
+
+export const getCategorySampleDefault = (category?: string) => {
+  switch (category) {
+    case 'Ceramics & Pottery':
+      return 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?auto=format&fit=crop&w=1000&q=80';
+    case 'Woodwork & Carving':
+      return 'https://images.unsplash.com/photo-1538688525198-9b88f6f53126?auto=format&fit=crop&w=1000&q=80';
+    case 'Jewelry & Metals':
+      return 'https://images.unsplash.com/photo-1611591475152-4735492d352b?auto=format&fit=crop&w=1000&q=80';
+    case 'Textiles & Weaving':
+    case 'Textiles & Fiber Art':
+      return 'https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&w=1000&q=80';
+    case 'Glassblowing & Stained Glass':
+      return 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=1000&q=80';
+    case 'Leathercraft & Bookbinding':
+      return 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=1000&q=80';
+    default:
+      return 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?auto=format&fit=crop&w=1000&q=80';
+  }
+};
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [users, setUsers] = useState<User[]>(() => loadStorage(STORAGE_KEYS.USERS, SEED_USERS));
+  const [users, setUsers] = useState<User[]>(() => {
+    const cached = loadStorage<User[]>(STORAGE_KEYS.USERS, SEED_USERS);
+    // Ensure any new seed users (like newly added admins) are present even if storage already exists
+    const merged = [...cached];
+    for (const seedU of SEED_USERS) {
+      if (!merged.some((u) => u.email.toLowerCase() === seedU.email.toLowerCase())) {
+        merged.push(seedU);
+      }
+    }
+    return merged;
+  });
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const cached = loadStorage<User | null>(STORAGE_KEYS.CURRENT_USER, null);
     if (cached) return cached;
@@ -201,9 +256,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [authLoading, setAuthLoading] = useState<boolean>(true);
 
   const [sellers, setSellers] = useState<SellerProfile[]>(() => loadStorage(STORAGE_KEYS.SELLERS, SEED_SELLERS));
-  const [sellerApplications, setSellerApplications] = useState<SellerApplication[]>(() =>
-    loadStorage(STORAGE_KEYS.SELLER_APPLICATIONS, SEED_SELLER_APPLICATIONS)
-  );
+  const [sellerApplications, setSellerApplications] = useState<SellerApplication[]>(() => {
+    const raw = loadStorage<SellerApplication[]>(STORAGE_KEYS.SELLER_APPLICATIONS, SEED_SELLER_APPLICATIONS);
+    
+    // Retrieve any persisted onboarding form data from Zustand store
+    let onboardingData: any = null;
+    try {
+      const persisted = localStorage.getItem('artisans-corner-seller-onboarding');
+      if (persisted) {
+        const parsed = JSON.parse(persisted);
+        onboardingData = parsed?.state?.formData;
+      }
+    } catch {}
+
+    return raw.map((app) => {
+      const isMatchingOnboarding = onboardingData && (
+        (onboardingData.shopName && onboardingData.shopName.toLowerCase() === app.shopName.toLowerCase()) ||
+        (onboardingData.craftCategory === app.craftCategory)
+      );
+
+      const workshopPhotoUrl = app.workshopPhotoUrl || 
+        (isMatchingOnboarding && onboardingData?.workshopPhotoUrl) || 
+        getCategoryWorkshopDefault(app.craftCategory);
+
+      const sampleImageUrl = app.sampleImageUrl || 
+        (isMatchingOnboarding && onboardingData?.sampleImageUrl) || 
+        getCategorySampleDefault(app.craftCategory);
+
+      const userMatch = SEED_USERS.find((u) => u.id === app.userId || u.email === app.userEmail);
+      const userAvatar = app.userAvatar || userMatch?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80';
+
+      return {
+        ...app,
+        userAvatar,
+        workshopPhotoUrl,
+        sampleImageUrl,
+        workshopAddress: app.workshopAddress || (isMatchingOnboarding && onboardingData?.workshopAddress) || `${app.location} Artisan Workshop`,
+        yearsOfExperience: app.yearsOfExperience || (isMatchingOnboarding && onboardingData?.yearsOfExperience) || '3-5 years',
+        sampleTitle: app.sampleTitle || (isMatchingOnboarding && onboardingData?.sampleTitle) || `${app.shopName} Signature Work`,
+        samplePrice: app.samplePrice || (isMatchingOnboarding && Number(onboardingData?.samplePrice)) || 95,
+        sampleCategory: app.sampleCategory || app.craftCategory,
+        sampleDescription: app.sampleDescription || (isMatchingOnboarding && onboardingData?.sampleDescription) || app.bio,
+        sampleMaterials: app.sampleMaterials || (isMatchingOnboarding && onboardingData?.sampleMaterials) || 'Hand-selected studio materials',
+        sampleLeadTime: app.sampleLeadTime || (isMatchingOnboarding && onboardingData?.sampleLeadTime) || 'Made to order (3-5 days)'
+      };
+    });
+  });
   const [products, setProducts] = useState<Product[]>(() => loadStorage(STORAGE_KEYS.PRODUCTS, SEED_PRODUCTS));
   const [cart, setCart] = useState<CartItem[]>(() => loadStorage(STORAGE_KEYS.CART, []));
   const [wishlist, setWishlist] = useState<string[]>(() => loadStorage(STORAGE_KEYS.WISHLIST, ['prod-1']));
@@ -225,6 +323,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
   const [toasts, setToasts] = useState<Toast[]>([]);
 
+  // Helper: Save/update user document in Firestore
+  const saveUserToFirestore = async (userData: User) => {
+    try {
+      if (!userData || !userData.id) return;
+      const userRef = doc(db, 'users', userData.id);
+      await setDoc(
+        userRef,
+        {
+          uid: userData.id,
+          name: userData.name || '',
+          email: userData.email || '',
+          role: userData.role || 'buyer',
+          avatar: userData.avatar || '',
+          isSellerApproved: Boolean(userData.isSellerApproved),
+          sellerProfileId: userData.sellerProfileId || null,
+          joinedDate: userData.joinedDate || new Date().toISOString().split('T')[0],
+          status: userData.status || 'active',
+          lastLoginAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        { merge: true }
+      );
+    } catch (err) {
+      console.warn('Failed to save user to Firestore:', err);
+    }
+  };
+
   // Initialize Firebase Analytics once on mount
   useEffect(() => {
     initAnalytics();
@@ -232,20 +357,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Listen to Firebase Auth state changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        const emailLower = (firebaseUser.email || '').toLowerCase();
-        // Check if user already exists in storage
-        const matched = users.find((u) => u.email.toLowerCase() === emailLower || u.id === firebaseUser.uid);
+        const emailLower = (firebaseUser.email || '').toLowerCase().trim();
+        // Check if user already exists in storage or is an authorized admin
         const isAuthorizedAdmin = AUTHORIZED_ADMIN_EMAILS.includes(emailLower);
+        const matched = users.find((u) => u.email.toLowerCase() === emailLower || u.id === firebaseUser.uid);
 
         if (matched) {
           const updatedUser: User = {
             ...matched,
             name: firebaseUser.displayName || matched.name,
-            avatar: firebaseUser.photoURL || matched.avatar
+            avatar: firebaseUser.photoURL || matched.avatar,
+            role: isAuthorizedAdmin ? 'admin' : matched.role
           };
           setCurrentUser(updatedUser);
+          await saveUserToFirestore(updatedUser);
           if (updatedUser.role === 'admin') {
             setCurrentRole('admin');
           } else if (updatedUser.isSellerApproved && currentRole === 'seller') {
@@ -270,6 +397,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setUsers((prev) => [newUser, ...prev]);
           setCurrentUser(newUser);
           setCurrentRole(newUser.role);
+          await saveUserToFirestore(newUser);
+          if (newUser.role === 'admin') {
+            setActiveTab('admin-dashboard');
+          }
         }
       }
       setAuthLoading(false);
@@ -304,20 +435,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
+  // Find seller application for current user
+  const currentUserApplication: SellerApplication | undefined = sellerApplications.find(
+    (a) => a.userId === currentUser?.id || a.userEmail.toLowerCase() === currentUser?.email?.toLowerCase()
+  );
+
   // Derive role capabilities
-  const isAdmin = currentUser?.role === 'admin';
+  const isEmailAdmin = Boolean(
+    currentUser?.email && AUTHORIZED_ADMIN_EMAILS.includes(currentUser.email.toLowerCase().trim())
+  );
+  const isAdmin = currentUser?.role === 'admin' || isEmailAdmin || currentRole === 'admin';
   const isSellerApproved = Boolean(
-    currentUser?.isSellerApproved || currentUser?.role === 'seller' || currentUser?.sellerProfileId
+    currentUser &&
+    (!currentUserApplication || currentUserApplication.status === 'approved') &&
+    (currentUser.isSellerApproved || currentUser.sellerProfileId || currentUser.role === 'seller')
   );
 
   // Find seller profile for current user
   const currentSellerProfile: SellerProfile | undefined = sellers.find(
     (s) => s.userId === currentUser?.id || (currentUser?.sellerProfileId && s.id === currentUser.sellerProfileId)
-  );
-
-  // Find seller application for current user
-  const currentUserApplication: SellerApplication | undefined = sellerApplications.find(
-    (a) => a.userId === currentUser?.id || a.userEmail.toLowerCase() === currentUser?.email.toLowerCase()
   );
 
   // Orders filtered specifically for current logged-in buyer
@@ -326,6 +462,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         (o) => o.buyerId === currentUser.id || o.buyerEmail.toLowerCase() === currentUser.email.toLowerCase()
       )
     : [];
+
 
   // Login action using Firebase Authentication with local sync
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
@@ -354,6 +491,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             errorMsg = 'Please provide a valid email address.';
           }
           return { success: false, error: errorMsg };
+        } else {
+          // If signing into a seeded admin account locally, allow password 123456
+          if (password !== '123456' && password.length < 6) {
+            return { success: false, error: 'Incorrect password. Please try again.' };
+          }
         }
       }
 
@@ -365,18 +507,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (matched.status === 'suspended') {
           return { success: false, error: 'Your account has been suspended. Please contact platform administration.' };
         }
-        setCurrentUser(matched);
-        if (matched.role === 'admin') {
+        // Retrieve latest seller application matching user
+        const matchedApp = sellerApplications.find(
+          (a) => a.userId === matched.id || a.userEmail.toLowerCase() === matched.email.toLowerCase()
+        );
+        const isApprovedSeller = matchedApp
+          ? matchedApp.status === 'approved'
+          : Boolean(matched.isSellerApproved || matched.sellerProfileId);
+
+        const userToSet: User = {
+          ...matched,
+          role: isAuthorizedAdmin ? 'admin' : isApprovedSeller ? 'seller' : 'buyer',
+          isSellerApproved: isApprovedSeller,
+          sellerApplication: matchedApp || matched.sellerApplication
+        };
+        setCurrentUser(userToSet);
+        // Save user data to Firestore
+        await saveUserToFirestore(userToSet);
+
+        if (userToSet.role === 'admin' || isAuthorizedAdmin) {
           setCurrentRole('admin');
           setActiveTab('admin-dashboard');
-        } else if (matched.isSellerApproved) {
+        } else if (userToSet.isSellerApproved) {
           setCurrentRole('seller');
           setActiveTab('seller-dashboard');
         } else {
           setCurrentRole('buyer');
           setActiveTab('marketplace');
         }
-        showToast(`Welcome back, ${matched.name}!`, 'success');
+        showToast(`Welcome back, ${userToSet.name}!`, 'success');
         return { success: true };
       }
 
@@ -396,6 +555,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCurrentUser(newUser);
       setCurrentRole(newUser.role);
       setActiveTab(newUser.role === 'admin' ? 'admin-dashboard' : 'marketplace');
+
+      // Save new user data to Firestore
+      await saveUserToFirestore(newUser);
+
       showToast(`Welcome to Artisan’s Corner, ${newUser.name}!`, 'success');
       return { success: true };
     } catch (err: any) {
@@ -435,12 +598,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
-      // New registrations are always standard Buyer accounts
+      // Check if this registered email is in the authorized admin list
+      const isAuthorizedAdmin = AUTHORIZED_ADMIN_EMAILS.includes(emailClean.toLowerCase());
+
       const newUser: User = {
         id: firebaseUid || `user-${Date.now()}`,
         name: nameClean,
         email: emailClean,
-        role: 'buyer',
+        role: isAuthorizedAdmin ? 'admin' : 'buyer',
         isSellerApproved: false,
         avatar: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80`,
         joinedDate: new Date().toISOString().split('T')[0],
@@ -449,13 +614,102 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       setUsers((prev) => [newUser, ...prev]);
       setCurrentUser(newUser);
-      setCurrentRole('buyer');
-      setActiveTab('marketplace');
+      setCurrentRole(newUser.role);
+      setActiveTab(newUser.role === 'admin' ? 'admin-dashboard' : 'marketplace');
+
+      // Save new user data to Firestore
+      await saveUserToFirestore(newUser);
+
       showToast(`Account created successfully! Welcome to Artisan’s Corner, ${nameClean}.`, 'success');
       return { success: true };
     } catch (err: any) {
       console.error('Registration error:', err);
       return { success: false, error: err.message || 'An unexpected error occurred during registration.' };
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // Google Sign-In
+  const loginWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setAuthLoading(true);
+      const result = await signInWithPopup(auth, googleProvider);
+      const firebaseUser = result.user;
+      const emailClean = (firebaseUser.email || '').toLowerCase().trim();
+      const isAuthorizedAdmin = AUTHORIZED_ADMIN_EMAILS.includes(emailClean);
+
+      // Check if user already exists locally
+      const matched = users.find((u) => u.email.toLowerCase() === emailClean || u.id === firebaseUser.uid);
+
+      if (matched) {
+        if (matched.status === 'suspended') {
+          return { success: false, error: 'Your account has been suspended. Please contact platform administration.' };
+        }
+        const matchedApp = sellerApplications.find(
+          (a) => a.userId === matched.id || a.userEmail.toLowerCase() === matched.email.toLowerCase()
+        );
+        const isApprovedSeller = matchedApp
+          ? matchedApp.status === 'approved'
+          : Boolean(matched.isSellerApproved || matched.sellerProfileId);
+
+        const userToSet: User = {
+          ...matched,
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || matched.name,
+          avatar: firebaseUser.photoURL || matched.avatar,
+          role: isAuthorizedAdmin ? 'admin' : isApprovedSeller ? 'seller' : matched.role,
+          isSellerApproved: isApprovedSeller,
+        };
+        setCurrentUser(userToSet);
+        await saveUserToFirestore(userToSet);
+
+        if (userToSet.role === 'admin' || isAuthorizedAdmin) {
+          setCurrentRole('admin');
+          setActiveTab('admin-dashboard');
+        } else if (userToSet.isSellerApproved) {
+          setCurrentRole('seller');
+          setActiveTab('seller-dashboard');
+        } else {
+          setCurrentRole('buyer');
+          setActiveTab('marketplace');
+        }
+        showToast(`Welcome back, ${userToSet.name}!`, 'success');
+        return { success: true };
+      }
+
+      // New Google user
+      const newUser: User = {
+        id: firebaseUser.uid,
+        name: firebaseUser.displayName || emailClean.split('@')[0],
+        email: emailClean,
+        role: isAuthorizedAdmin ? 'admin' : 'buyer',
+        isSellerApproved: false,
+        avatar: firebaseUser.photoURL || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80`,
+        joinedDate: new Date().toISOString().split('T')[0],
+        status: 'active'
+      };
+
+      setUsers((prev) => [newUser, ...prev]);
+      setCurrentUser(newUser);
+      setCurrentRole(newUser.role);
+      setActiveTab(newUser.role === 'admin' ? 'admin-dashboard' : 'marketplace');
+
+      // Save new user data to Firestore
+      await saveUserToFirestore(newUser);
+
+
+      // Save to Firestore
+      await saveUserToFirestore(newUser);
+
+      showToast(`Welcome to Artisan's Corner, ${newUser.name}!`, 'success');
+      return { success: true };
+    } catch (err: any) {
+      console.error('Google Sign-In error:', err);
+      if (err.code === 'auth/popup-closed-by-user') {
+        return { success: false, error: 'Sign-in popup was closed. Please try again.' };
+      }
+      return { success: false, error: err.message || 'Google sign-in failed. Please try again.' };
     } finally {
       setAuthLoading(false);
     }
@@ -529,23 +783,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const newApp: SellerApplication = {
       ...formData,
-      id: `app-${Date.now()}`,
+      id: currentUserApplication?.id || `app-${Date.now()}`,
       userId: currentUser.id,
       userName: currentUser.name,
       userEmail: currentUser.email,
+      userAvatar: currentUser.avatar,
       submittedAt: new Date().toISOString(),
-      status: 'pending'
+      status: 'pending',
+      adminNotes: undefined
     };
 
-    setSellerApplications((prev) => [newApp, ...prev.filter((a) => a.userId !== currentUser.id)]);
+    setSellerApplications((prev) => [
+      newApp,
+      ...prev.filter(
+        (a) =>
+          a.id !== newApp.id &&
+          a.userId !== currentUser.id &&
+          a.userEmail.toLowerCase() !== currentUser.email.toLowerCase()
+      )
+    ]);
 
     // Attach application to user object
     const updatedUser: User = {
       ...currentUser,
+      isSellerApproved: false,
       sellerApplication: newApp
     };
     setCurrentUser(updatedUser);
-    setUsers((prev) => prev.map((u) => (u.id === currentUser.id ? updatedUser : u)));
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === currentUser.id || u.email.toLowerCase() === currentUser.email.toLowerCase() ? updatedUser : u
+      )
+    );
 
     setIsBecomeSellerOpen(false);
     showToast(
@@ -581,9 +850,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       craftCategory: application.craftCategory,
       location: application.location,
       avatarUrl:
+        application.userAvatar ||
         currentUser?.avatar ||
         'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
       bannerUrl:
+        application.workshopPhotoUrl ||
         'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=1200&q=80',
       rating: 5.0,
       totalSales: 0,
@@ -596,6 +867,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setSellers((prev) => [newSellerProfile, ...prev.filter((s) => s.userId !== application.userId)]);
+
+    // If sample artifact photo and title were provided, seed the first active product
+    if (application.sampleTitle && application.sampleImageUrl) {
+      const sampleProd: Product = {
+        id: `prod-sample-${Date.now()}`,
+        sellerId,
+        sellerName: application.shopName,
+        sellerLocation: application.location || 'Artisan Workshop',
+        title: application.sampleTitle,
+        category: application.sampleCategory || application.craftCategory,
+        price: application.samplePrice || 95,
+        rating: 5.0,
+        reviewsCount: 1,
+        images: [application.sampleImageUrl],
+        description: application.sampleDescription || application.bio,
+        materials: application.sampleMaterials
+          ? application.sampleMaterials.split(',').map((m) => m.trim())
+          : ['Artisan Handcrafted Materials'],
+        story: application.bio || 'Handcrafted with traditional artisan techniques.',
+        dimensions: 'Handcrafted dimensions',
+        weight: 'Handmade item',
+        leadTime: application.sampleLeadTime || 'Made to order (3-5 days)',
+        careInstructions: 'Handle with care. Wipe gently with dry cloth.',
+        status: 'published',
+        stock: 5,
+        featured: true,
+        createdAt: new Date().toISOString()
+      };
+      setProducts((prev) => [sampleProd, ...prev]);
+    }
 
     // Update user record
     setUsers((prev) =>
@@ -635,15 +936,64 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
+    const rejectionReason = feedback?.trim() || 'Application does not meet current criteria.';
+    let updatedTargetApp: SellerApplication | undefined;
+
     setSellerApplications((prev) =>
-      prev.map((a) =>
-        a.id === applicationId
-          ? { ...a, status: 'rejected' as const, adminNotes: feedback || 'Application does not meet current criteria.' }
-          : a
-      )
+      prev.map((a) => {
+        if (a.id === applicationId) {
+          updatedTargetApp = {
+            ...a,
+            status: 'rejected' as const,
+            adminNotes: rejectionReason
+          };
+          return updatedTargetApp;
+        }
+        return a;
+      })
     );
 
-    showToast('Application marked as rejected', 'info');
+    // Synchronize to users state
+    setUsers((prev) =>
+      prev.map((u) => {
+        if (
+          updatedTargetApp &&
+          (u.id === updatedTargetApp.userId || u.email.toLowerCase() === updatedTargetApp.userEmail.toLowerCase())
+        ) {
+          return {
+            ...u,
+            isSellerApproved: false,
+            role: u.role === 'admin' ? 'admin' : 'buyer',
+            sellerApplication: updatedTargetApp
+          };
+        }
+        return u;
+      })
+    );
+
+    // Synchronize to currentUser if this is the applicant
+    if (
+      currentUser &&
+      updatedTargetApp &&
+      (currentUser.id === updatedTargetApp.userId ||
+        currentUser.email.toLowerCase() === updatedTargetApp.userEmail.toLowerCase())
+    ) {
+      setCurrentUser((prev) =>
+        prev
+          ? {
+              ...prev,
+              isSellerApproved: false,
+              role: prev.role === 'admin' ? 'admin' : 'buyer',
+              sellerApplication: updatedTargetApp
+            }
+          : null
+      );
+      if (currentRole === 'seller') {
+        setCurrentRole('buyer');
+      }
+    }
+
+    showToast('Application marked as rejected with feedback recorded', 'info');
   };
 
   const toggleUserStatus = (userId: string) => {
@@ -1103,10 +1453,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         authLoading,
         login,
         register,
+        loginWithGoogle,
         logout,
         switchRole,
         isSellerApproved,
         isAdmin,
+        AUTHORIZED_ADMIN_EMAILS,
         users,
         toggleUserStatus,
         sellerApplications,

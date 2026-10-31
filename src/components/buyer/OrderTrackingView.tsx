@@ -180,7 +180,7 @@ export const OrderTrackingView: React.FC = () => {
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-serif font-bold text-sm text-[#2A2521]">
+                      <span className="font-bold text-sm text-[#2A2521]">
                         {ord.orderNumber}
                       </span>
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${badge.color}`}>
@@ -211,7 +211,7 @@ export const OrderTrackingView: React.FC = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-[#EFE7D8] gap-4">
                   <div>
                     <div className="flex items-center gap-3">
-                      <h2 className="font-serif text-2xl font-bold text-[#2A2521]">
+                      <h2 className="text-2xl font-bold text-[#2A2521]">
                         Order #{activeOrder.orderNumber}
                       </h2>
                       <span
@@ -232,7 +232,7 @@ export const OrderTrackingView: React.FC = () => {
                   {/* Tracking snippet */}
                   <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 bg-[#F8F4EE] px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl border border-[#E4D9C4] text-xs self-start sm:self-auto">
                     <Truck className="w-4 h-4 text-[#A86F47]" />
-                    <span className="font-mono text-[#2A2521] text-[11px] sm:text-xs">{activeOrder.trackingNumber}</span>
+                    <span className="font-semibold text-[#2A2521] text-[11px] sm:text-xs">{activeOrder.trackingNumber}</span>
                     <button
                       onClick={() => copyTracking(activeOrder.trackingNumber)}
                       className="text-gray-400 hover:text-gray-700 cursor-pointer"
@@ -267,7 +267,7 @@ export const OrderTrackingView: React.FC = () => {
                         <div>
                           <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-0.5 sm:gap-2">
                             <h4 className="text-sm font-bold text-[#2A2521]">{step.label}</h4>
-                            <span className="text-[11px] text-gray-400 font-mono">{step.date}</span>
+                            <span className="text-[11px] text-gray-400 font-medium">{step.date}</span>
                           </div>
                           <p className="text-xs text-[#645D56] mt-0.5 leading-relaxed">
                             {step.description}
@@ -354,7 +354,7 @@ export const OrderTrackingView: React.FC = () => {
                     <span>Platform Service Fee Deducted (5% of Subtotal):</span>
                     <span>${activeOrder.platformCommissionTotal.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between font-serif font-bold text-sm text-[#2A2521] pt-1">
+                  <div className="flex justify-between font-bold text-sm text-[#2A2521] pt-1">
                     <span>Grand Total Paid:</span>
                     <span>${activeOrder.total.toFixed(2)} USD</span>
                   </div>

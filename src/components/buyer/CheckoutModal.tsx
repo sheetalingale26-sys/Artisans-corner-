@@ -241,15 +241,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onClose }) => {
               <div className="space-y-1.5 text-[#645D56]">
                 <div className="flex justify-between">
                   <span>Gross Craft Subtotal ({cart.length} items):</span>
-                  <span className="font-mono text-[#2A2521]">${subtotal.toFixed(2)}</span>
+                  <span className="font-semibold text-[#2A2521]">${subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-[#A86F47] font-medium">
                   <span>Platform Operations Fee (5%):</span>
-                  <span className="font-mono">−${commission.toFixed(2)}</span>
+                  <span className="font-semibold">−${commission.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-[#6B7A52] font-semibold bg-[#EFF3EB] p-2 rounded-lg">
                   <span>Direct Seller Earnings (95% to Artisans):</span>
-                  <span className="font-mono">${sellerNet.toFixed(2)}</span>
+                  <span className="font-bold">${sellerNet.toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -266,7 +266,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onClose }) => {
                     type="text"
                     value={paymentData.cardNumber}
                     onChange={(e) => setPaymentData({ ...paymentData, cardNumber: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2.5 bg-[#F8F4EE] border border-[#E4D9C4] rounded-xl text-sm font-mono focus:outline-hidden focus:border-[#A86F47]"
+                    className="w-full pl-10 pr-4 py-2.5 bg-[#F8F4EE] border border-[#E4D9C4] rounded-xl text-sm focus:outline-hidden focus:border-[#A86F47]"
                   />
                 </div>
               </div>
@@ -280,7 +280,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onClose }) => {
                     type="text"
                     value={paymentData.expDate}
                     onChange={(e) => setPaymentData({ ...paymentData, expDate: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-[#F8F4EE] border border-[#E4D9C4] rounded-xl text-sm font-mono focus:outline-hidden focus:border-[#A86F47]"
+                    className="w-full px-4 py-2.5 bg-[#F8F4EE] border border-[#E4D9C4] rounded-xl text-sm focus:outline-hidden focus:border-[#A86F47]"
                   />
                 </div>
                 <div>
@@ -291,7 +291,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onClose }) => {
                     type="text"
                     value={paymentData.cvv}
                     onChange={(e) => setPaymentData({ ...paymentData, cvv: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-[#F8F4EE] border border-[#E4D9C4] rounded-xl text-sm font-mono focus:outline-hidden focus:border-[#A86F47]"
+                    className="w-full px-4 py-2.5 bg-[#F8F4EE] border border-[#E4D9C4] rounded-xl text-sm focus:outline-hidden focus:border-[#A86F47]"
                   />
                 </div>
               </div>
@@ -307,7 +307,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onClose }) => {
                 <span>Estimated Sales Tax (8%):</span>
                 <span>${tax.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-base font-serif font-bold text-[#2A2521] pt-2 border-t border-[#EFE7D8]">
+              <div className="flex justify-between text-base font-bold text-[#2A2521] pt-2 border-t border-[#EFE7D8]">
                 <span>Total Due:</span>
                 <span>${grandTotal.toFixed(2)} USD</span>
               </div>

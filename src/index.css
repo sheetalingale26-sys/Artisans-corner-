@@ -1,5 +1,21 @@
 @import "tailwindcss";
 
+/* Normal standard numerals (0–9) font definition mapped to Plus Jakarta Sans */
+@font-face {
+  font-family: 'StandardNumerals';
+  font-style: normal;
+  font-weight: 300 800;
+  font-display: swap;
+  src: local('Plus Jakarta Sans'),
+       local('PlusJakartaSans'),
+       local('Segoe UI'),
+       local('Roboto'),
+       local('Helvetica Neue'),
+       local('Arial'),
+       sans-serif;
+  unicode-range: U+0030-0039;
+}
+
 @layer base {
   :root {
     --warm-ivory: #F4EEE6;
@@ -29,14 +45,20 @@
     color: #28231F;
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     -webkit-tap-highlight-color: transparent;
+    font-variant-numeric: lining-nums tabular-nums;
+    font-feature-settings: "lnum" 1, "tnum" 1, "onum" 0;
   }
 
-  h1, h2, h3, .font-serif {
-    font-family: 'Fraunces', Georgia, serif;
+  /* Headings maintain their signature Fraunces typography for text,
+     while numerals (0–9) consistently use StandardNumerals */
+  h1, h2, h3, h4, h5, h6, .font-serif {
+    font-family: 'StandardNumerals', 'Fraunces', Georgia, serif;
+    font-variant-numeric: lining-nums tabular-nums;
+    font-feature-settings: "lnum" 1, "tnum" 1, "onum" 0;
   }
 
   .font-signature {
-    font-family: 'Caveat', cursive;
+    font-family: 'StandardNumerals', 'Caveat', cursive;
   }
 }
 

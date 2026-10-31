@@ -16,7 +16,9 @@ import {
   UserPlus,
   Clock,
   Sparkles,
-  ArrowRightLeft
+  ArrowRightLeft,
+  XCircle,
+  AlertCircle
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -130,22 +132,33 @@ export const Header: React.FC = () => {
                 </div>
               )}
 
-              {/* If user is not yet a seller */}
-              {!isSellerApproved && !isAdmin && currentUser && (
-                currentUserApplication?.status === 'pending' ? (
+              {/* High-Impact Top-Nav: Become a Seller (Prominently visible for all buyers and guests) */}
+              {!isSellerApproved && !isAdmin && (
+                currentUserApplication?.status === 'rejected' ? (
                   <button
                     onClick={() => setIsBecomeSellerOpen(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#A86F47] bg-[#F6EDE6] border border-[#E8DEC8] hover:bg-[#EFE7DC] transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 transition-all cursor-pointer shadow-xs"
+                    title="Your seller application was rejected. Click to view reason and reapply."
                   >
-                    <Clock className="w-3.5 h-3.5 animate-pulse" />
+                    <XCircle className="w-3.5 h-3.5 text-red-600" />
+                    <span>Application Rejected</span>
+                  </button>
+                ) : currentUserApplication?.status === 'pending' ? (
+                  <button
+                    onClick={() => setIsBecomeSellerOpen(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#A86F47] bg-[#F6EDE6] border border-[#E8DEC8] hover:bg-[#EFE7DC] transition-all cursor-pointer shadow-xs"
+                    title="View your pending application details"
+                  >
+                    <Clock className="w-3.5 h-3.5 animate-pulse text-[#A86F47]" />
                     <span>Application Pending</span>
                   </button>
                 ) : (
                   <button
                     onClick={() => setIsBecomeSellerOpen(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#6B7A52] bg-[#EFF3EB] border border-[#D9E3D3] hover:bg-[#E4ECD9] transition-colors cursor-pointer"
+                    className="group flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-[#FFFCF7] bg-[#6B7A52] hover:bg-[#586543] border border-[#586543] transition-all duration-200 cursor-pointer shadow-xs hover:shadow"
+                    title="Open an Artisan Shop & Sell Handcrafted Goods"
                   >
-                    <Store className="w-3.5 h-3.5" />
+                    <Store className="w-3.5 h-3.5 text-[#D9E3D3] group-hover:scale-110 transition-transform" />
                     <span>Become a Seller</span>
                   </button>
                 )
@@ -252,6 +265,14 @@ export const Header: React.FC = () => {
                             <span className="text-[#A86F47] flex items-center gap-1">
                               <Store className="w-3 h-3" /> Verified Artisan
                             </span>
+                          ) : currentUserApplication?.status === 'rejected' ? (
+                            <span className="text-red-700 flex items-center gap-1 font-bold">
+                              <XCircle className="w-3 h-3 text-red-600" /> Application Rejected
+                            </span>
+                          ) : currentUserApplication?.status === 'pending' ? (
+                            <span className="text-[#A86F47] flex items-center gap-1 font-semibold">
+                              <Clock className="w-3 h-3 text-[#A86F47]" /> Application Pending
+                            </span>
                           ) : (
                             <span className="text-[#28231F] flex items-center gap-1">
                               <UserIcon className="w-3 h-3" /> Buyer Account
@@ -322,20 +343,59 @@ export const Header: React.FC = () => {
                         </button>
 
                         {!isSellerApproved && !isAdmin && (
-                          <button
-                            onClick={() => {
-                              setIsBecomeSellerOpen(true);
-                              setUserMenuOpen(false);
-                            }}
-                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[#6B7A52] hover:bg-[#EFF3EB] transition-colors text-left cursor-pointer"
-                          >
-                            <Store className="w-4 h-4" />
-                            <span>
-                              {currentUserApplication?.status === 'pending'
-                                ? 'View Application Status'
-                                : 'Become an Artisan Seller'}
-                            </span>
-                          </button>
+                          currentUserApplication?.status === 'rejected' ? (
+                            <div className="my-1 space-y-1">
+                              <button
+                                onClick={() => {
+                                  setActiveTab('seller-dashboard');
+                                  setUserMenuOpen(false);
+                                }}
+                                className="w-full flex items-center justify-between p-2.5 rounded-2xl bg-red-50 hover:bg-red-100/90 border border-red-200 transition-colors text-left cursor-pointer"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className="w-7 h-7 rounded-lg bg-red-100 text-red-700 flex items-center justify-center shrink-0">
+                                    <XCircle className="w-4 h-4 text-red-600" />
+                                  </div>
+                                  <div>
+                                    <div className="text-xs font-bold text-red-800 leading-tight">
+                                      Application Rejected
+                                    </div>
+                                    <div className="text-[10px] text-red-600 leading-tight mt-0.5">
+                                      View feedback & studio status
+                                    </div>
+                                  </div>
+                                </div>
+                                <span className="text-[9px] font-bold uppercase bg-red-200/80 text-red-800 px-1.5 py-0.5 rounded">
+                                  Review
+                                </span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setIsBecomeSellerOpen(true);
+                                  setUserMenuOpen(false);
+                                }}
+                                className="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#A86F47] hover:bg-[#F8F4EE] transition-colors text-left cursor-pointer"
+                              >
+                                <Store className="w-4 h-4 text-[#A86F47]" />
+                                <span>Review Details & Reapply</span>
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setIsBecomeSellerOpen(true);
+                                setUserMenuOpen(false);
+                              }}
+                              className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[#6B7A52] hover:bg-[#EFF3EB] transition-colors text-left cursor-pointer"
+                            >
+                              <Store className="w-4 h-4" />
+                              <span>
+                                {currentUserApplication?.status === 'pending'
+                                  ? 'View Application Status'
+                                  : 'Become an Artisan Seller'}
+                              </span>
+                            </button>
+                          )
                         )}
 
                         {isAdmin && (
@@ -425,13 +485,30 @@ export const Header: React.FC = () => {
               Seller Hub
             </button>
           )}
-          {!isSellerApproved && !isAdmin && currentUser && (
-            <button
-              onClick={() => setIsBecomeSellerOpen(true)}
-              className="px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0 text-[#6B7A52] bg-[#EFF3EB]"
-            >
-              Become a Seller
-            </button>
+          {!isSellerApproved && !isAdmin && (
+            currentUserApplication?.status === 'rejected' ? (
+              <button
+                onClick={() => setActiveTab('seller-dashboard')}
+                className="px-3.5 py-1.5 rounded-xl whitespace-nowrap shrink-0 text-red-700 bg-red-50 font-semibold text-xs shadow-xs border border-red-200 flex items-center gap-1"
+              >
+                <XCircle className="w-3.5 h-3.5 text-red-600" />
+                <span>Application Rejected</span>
+              </button>
+            ) : currentUserApplication?.status === 'pending' ? (
+              <button
+                onClick={() => setIsBecomeSellerOpen(true)}
+                className="px-3.5 py-1.5 rounded-xl whitespace-nowrap shrink-0 text-[#A86F47] bg-[#F6EDE6] font-semibold text-xs shadow-xs border border-[#E8DEC8]"
+              >
+                Application Pending
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsBecomeSellerOpen(true)}
+                className="px-3.5 py-1.5 rounded-xl whitespace-nowrap shrink-0 text-white bg-[#6B7A52] font-semibold text-xs shadow-xs"
+              >
+                Become a Seller
+              </button>
+            )
           )}
           {isAdmin && (
             <button

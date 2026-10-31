@@ -19,12 +19,18 @@ import {
   Send,
   Eye,
   Sliders,
-  Sparkles
+  Sparkles,
+  XCircle,
+  AlertCircle,
+  RotateCcw,
+  FileText
 } from 'lucide-react';
+import { ImageUploadField } from '../common/ImageUploadField';
 
 export const SellerDashboard: React.FC = () => {
   const {
     currentSellerProfile,
+    currentUserApplication,
     updateSellerProfile,
     products,
     addProduct,
@@ -84,6 +90,143 @@ export const SellerDashboard: React.FC = () => {
 
   const seller = currentSellerProfile;
   if (!isSellerApproved || !seller) {
+    if (currentUserApplication?.status === 'rejected') {
+      return (
+        <div className="min-h-[75vh] flex items-center justify-center p-4 sm:p-6 bg-[#F4EEE6]">
+          <div className="max-w-xl w-full p-6 sm:p-8 bg-[#FFFCF7] rounded-3xl border border-red-200 shadow-2xl text-center space-y-5">
+            {/* Top Rejected Badge & Icon */}
+            <div>
+              <div className="w-16 h-16 rounded-2xl bg-red-100 text-red-700 mx-auto flex items-center justify-center mb-4 border border-red-200 shadow-xs">
+                <XCircle className="w-8 h-8 text-red-600" />
+              </div>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-100 text-red-800 border border-red-200 text-xs font-bold uppercase tracking-wider">
+                <XCircle className="w-3.5 h-3.5 text-red-600" />
+                Application Rejected
+              </span>
+              <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#28231F] mt-3">
+                Application Rejected
+              </h2>
+              <p className="text-xs sm:text-sm text-[#645D56] mt-1.5 leading-relaxed max-w-md mx-auto">
+                Your artisan seller application for <strong className="text-[#28231F]">"{currentUserApplication.shopName}"</strong> was reviewed by platform administrators and was not approved at this time.
+              </p>
+            </div>
+
+            {/* Rejection Reason Card */}
+            <div className="p-4 sm:p-5 bg-red-50/90 border border-red-200 rounded-2xl text-left space-y-1.5 shadow-xs">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-red-800">
+                <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                <span>Rejection Reason & Feedback</span>
+              </div>
+              <p className="text-xs sm:text-sm text-red-900 leading-relaxed font-medium">
+                {currentUserApplication.adminNotes || 'Application does not meet current platform artisan curation standards.'}
+              </p>
+            </div>
+
+            {/* Submitted Application Summary */}
+            <div className="p-4 bg-[#FAF6F0] rounded-2xl border border-[#E8DEC8] text-left text-xs grid grid-cols-1 sm:grid-cols-2 gap-3 text-[#645D56]">
+              <div>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#8A7E72] block">
+                  Studio Shop Name
+                </span>
+                <span className="font-semibold text-[#28231F] text-sm block mt-0.5">
+                  {currentUserApplication.shopName}
+                </span>
+              </div>
+              <div>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#8A7E72] block">
+                  Craft Discipline
+                </span>
+                <span className="font-semibold text-[#28231F] text-sm block mt-0.5">
+                  {currentUserApplication.craftCategory}
+                </span>
+              </div>
+              <div>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#8A7E72] block">
+                  Studio Location
+                </span>
+                <span className="font-medium text-[#28231F] block mt-0.5">
+                  {currentUserApplication.location}
+                </span>
+              </div>
+              <div>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#8A7E72] block">
+                  Date Submitted
+                </span>
+                <span className="font-medium text-[#28231F] block mt-0.5">
+                  {new Date(currentUserApplication.submittedAt).toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+
+            {/* CTAs */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsBecomeSellerOpen(true)}
+                className="flex-1 py-3 px-4 rounded-xl bg-[#A86F47] hover:bg-[#8F5732] text-white text-xs sm:text-sm font-semibold shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>Submit a New Application</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsBecomeSellerOpen(true)}
+                className="py-3 px-4 rounded-xl border border-[#D5C7B5] bg-white hover:bg-[#F8F4EE] text-[#28231F] text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <FileText className="w-4 h-4 text-[#A86F47]" />
+                <span>View Full Application Details</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setGlobalActiveTab('marketplace')}
+              className="text-xs text-[#8A7E72] hover:text-[#28231F] underline transition-colors cursor-pointer"
+            >
+              Return to Marketplace
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (currentUserApplication?.status === 'pending') {
+      return (
+        <div className="min-h-[75vh] flex items-center justify-center p-4 sm:p-6 bg-[#F4EEE6]">
+          <div className="max-w-md w-full p-8 bg-[#FFFCF7] rounded-3xl border border-[#E4D9C4] shadow-2xl text-center">
+            <div className="w-16 h-16 rounded-2xl bg-[#F6EDE6] text-[#A86F47] mx-auto flex items-center justify-center mb-4 border border-[#E8DEC8] shadow-xs">
+              <Clock className="w-8 h-8 animate-pulse" />
+            </div>
+            <span className="inline-block px-3 py-1 rounded-full bg-[#F6EDE6] border border-[#E8DEC8] text-xs font-semibold text-[#A86F47] uppercase tracking-wider mb-2">
+              Application Under Review
+            </span>
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#28231F]">
+              "{currentUserApplication.shopName}"
+            </h2>
+            <p className="text-xs sm:text-sm text-[#645D56] mt-2 mb-6 leading-relaxed">
+              Our platform curation team is currently reviewing your artisan dossier. Review usually completes within 24–48 hours.
+            </p>
+            <div className="flex flex-col gap-2.5">
+              <button
+                type="button"
+                onClick={() => setIsBecomeSellerOpen(true)}
+                className="w-full py-3 px-4 rounded-xl bg-[#A86F47] hover:bg-[#8F5732] text-white text-xs sm:text-sm font-semibold shadow-xs transition-colors cursor-pointer"
+              >
+                View Application Details
+              </button>
+              <button
+                type="button"
+                onClick={() => setGlobalActiveTab('marketplace')}
+                className="w-full py-2.5 px-4 rounded-xl border border-[#E4D9C4] text-[#645D56] hover:bg-[#F8F4EE] text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
+              >
+                Return to Marketplace
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-[75vh] flex items-center justify-center p-4 sm:p-6 bg-[#F4EEE6]">
         <div className="max-w-md w-full p-8 bg-[#FFFCF7] rounded-3xl border border-[#E4D9C4] shadow-2xl text-center">
@@ -295,7 +438,7 @@ export const SellerDashboard: React.FC = () => {
               <span className="text-[11px] font-semibold uppercase tracking-wider text-[#645D56] block mb-1">
                 Gross Studio Sales
               </span>
-              <div className="font-serif text-2xl font-bold text-[#2A2521]">
+              <div className="text-2xl font-bold text-[#2A2521]">
                 ${grossSales.toLocaleString('en-US', { minimumFractionDigits: 2 })}
               </div>
               <span className="text-[11px] text-gray-400 mt-1 block">
@@ -307,7 +450,7 @@ export const SellerDashboard: React.FC = () => {
               <span className="text-[11px] font-semibold uppercase tracking-wider text-[#A86F47] block mb-1">
                 5% Platform Fee (−)
               </span>
-              <div className="font-serif text-2xl font-bold text-[#A86F47]">
+              <div className="text-2xl font-bold text-[#A86F47]">
                 ${platformFeesDeducted.toFixed(2)}
               </div>
               <span className="text-[11px] text-[#A86F47] mt-1 block font-medium">
@@ -319,7 +462,7 @@ export const SellerDashboard: React.FC = () => {
               <span className="text-[11px] font-semibold uppercase tracking-wider text-[#6B7A52] block mb-1">
                 Net Artisan Earnings (95%)
               </span>
-              <div className="font-serif text-2xl font-bold text-[#6B7A52]">
+              <div className="text-2xl font-bold text-[#6B7A52]">
                 ${netEarnings.toLocaleString('en-US', { minimumFractionDigits: 2 })}
               </div>
               <span className="text-[11px] text-gray-500 mt-1 block">
@@ -332,7 +475,7 @@ export const SellerDashboard: React.FC = () => {
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-[#2A2521] block mb-1">
                   Available for Payout
                 </span>
-                <div className="font-serif text-2xl font-bold text-[#2A2521]">
+                <div className="text-2xl font-bold text-[#2A2521]">
                   ${availablePayout.toFixed(2)}
                 </div>
               </div>
@@ -423,7 +566,7 @@ export const SellerDashboard: React.FC = () => {
                       <div className="p-4">
                         <div className="text-[10px] uppercase font-semibold text-[#A86F47]">{p.category}</div>
                         <h4 className="font-serif font-bold text-base text-[#2A2521] mt-0.5">{p.title}</h4>
-                        <div className="font-serif font-bold text-lg text-[#2A2521] mt-1">${p.price}</div>
+                        <div className="font-bold text-lg text-[#2A2521] mt-1">${p.price}</div>
 
                         {/* Quick Stock Controls */}
                         <div className="mt-3 pt-3 border-t border-[#EFE7D8] flex items-center justify-between text-xs">
@@ -436,7 +579,7 @@ export const SellerDashboard: React.FC = () => {
                             >
                               −
                             </button>
-                            <span className="px-2.5 font-mono font-bold text-xs">{p.stock}</span>
+                            <span className="px-2.5 font-bold text-xs">{p.stock}</span>
                             <button
                               onClick={() => updateProductStock(p.id, p.stock + 1)}
                               className="px-2 py-1 text-gray-700 hover:bg-[#F8F4EE]"
@@ -522,14 +665,14 @@ export const SellerDashboard: React.FC = () => {
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#EFE7D8] gap-3">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-serif text-base font-bold text-[#2A2521]">
+                            <span className="text-base font-bold text-[#2A2521]">
                               Order #{ord.orderNumber}
                             </span>
                             <span className="text-xs text-gray-400">•</span>
                             <span className="text-xs text-gray-500">Patron: <strong>{ord.buyerName}</strong> ({ord.buyerEmail})</span>
                           </div>
                           <div className="text-xs text-gray-500 mt-0.5">
-                            Placed on {new Date(ord.createdAt).toLocaleDateString()} • Tracking: <span className="font-mono">{ord.trackingNumber}</span>
+                            Placed on {new Date(ord.createdAt).toLocaleDateString()} • Tracking: <span className="font-semibold">{ord.trackingNumber}</span>
                           </div>
                         </div>
 
@@ -564,7 +707,7 @@ export const SellerDashboard: React.FC = () => {
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="font-mono font-bold text-[#2A2521]">${(item.price * item.quantity).toFixed(2)}</div>
+                              <div className="font-bold text-[#2A2521]">${(item.price * item.quantity).toFixed(2)}</div>
                               <div className="text-[10px] text-[#A86F47]">−5% fee: ${item.commissionFee.toFixed(2)}</div>
                             </div>
                           </div>
@@ -577,7 +720,7 @@ export const SellerDashboard: React.FC = () => {
                         <div className="flex items-center gap-4">
                           <span className="text-gray-500">Gross: ${myGross.toFixed(2)}</span>
                           <span className="text-[#A86F47]">5% Fee: −${myFee.toFixed(2)}</span>
-                          <span className="font-bold text-[#6B7A52] font-mono">Net Earned: ${myNet.toFixed(2)}</span>
+                          <span className="font-bold text-[#6B7A52]">Net Earned: ${myNet.toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
@@ -624,10 +767,10 @@ export const SellerDashboard: React.FC = () => {
                   <tbody className="divide-y divide-[#E4D9C4]">
                     {sellerPayouts.map((pay) => (
                       <tr key={pay.id} className="hover:bg-[#FDFBF7]">
-                        <td className="p-3.5 font-mono font-bold text-[#2A2521]">{pay.id}</td>
+                        <td className="p-3.5 font-semibold text-[#2A2521]">{pay.id}</td>
                         <td className="p-3.5 text-gray-600">{pay.requestDate}</td>
                         <td className="p-3.5 text-gray-700">{pay.method} (•••• {pay.accountEnding})</td>
-                        <td className="p-3.5 font-serif font-bold text-sm text-[#2A2521]">${pay.amount.toFixed(2)}</td>
+                        <td className="p-3.5 font-bold text-sm text-[#2A2521]">${pay.amount.toFixed(2)}</td>
                         <td className="p-3.5">
                           <span
                             className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
@@ -815,7 +958,7 @@ export const SellerDashboard: React.FC = () => {
                       min={5}
                       value={formData.price}
                       onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-                      className="w-full px-4 py-2.5 bg-[#F8F4EE] border border-[#E4D9C4] rounded-xl text-sm font-mono"
+                      className="w-full px-4 py-2.5 bg-[#F8F4EE] border border-[#E4D9C4] rounded-xl text-sm"
                     />
                     <span className="text-[10px] text-[#A86F47] mt-0.5 block">
                       Net: ${(formData.price * 0.95).toFixed(2)} (95%)
@@ -832,7 +975,7 @@ export const SellerDashboard: React.FC = () => {
                       min={0}
                       value={formData.stock}
                       onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
-                      className="w-full px-4 py-2.5 bg-[#F8F4EE] border border-[#E4D9C4] rounded-xl text-sm font-mono"
+                      className="w-full px-4 py-2.5 bg-[#F8F4EE] border border-[#E4D9C4] rounded-xl text-sm"
                     />
                   </div>
                 </div>
@@ -922,14 +1065,12 @@ export const SellerDashboard: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-[#2A2521] uppercase tracking-wider mb-1">
-                    High-Res Image URL
-                  </label>
-                  <input
-                    type="url"
+                  <ImageUploadField
+                    label="Artifact Photograph"
                     value={formData.imageUrl}
-                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-[#F8F4EE] border border-[#E4D9C4] rounded-xl text-sm"
+                    onChange={(val) => setFormData({ ...formData, imageUrl: val })}
+                    helperText="Upload an image from your device (PNG, JPG, AVIF, WEBP) or paste an image URL."
+                    required
                   />
                 </div>
 
@@ -975,7 +1116,7 @@ export const SellerDashboard: React.FC = () => {
                     step="0.01"
                     value={payoutAmount}
                     onChange={(e) => setPayoutAmount(parseFloat(e.target.value))}
-                    className="w-full px-4 py-2.5 bg-[#F8F4EE] border border-[#E4D9C4] rounded-xl text-sm font-mono font-bold"
+                    className="w-full px-4 py-2.5 bg-[#F8F4EE] border border-[#E4D9C4] rounded-xl text-sm font-bold"
                   />
                 </div>
 

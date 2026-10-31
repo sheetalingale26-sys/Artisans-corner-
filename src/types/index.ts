@@ -5,6 +5,7 @@ export interface SellerApplication {
   userId: string;
   userName: string;
   userEmail: string;
+  userAvatar?: string;
   shopName: string;
   tagline: string;
   bio: string;
@@ -12,6 +13,16 @@ export interface SellerApplication {
   location: string;
   phone: string;
   portfolioUrl?: string;
+  workshopAddress?: string;
+  workshopPhotoUrl?: string;
+  yearsOfExperience?: string;
+  sampleTitle?: string;
+  samplePrice?: number;
+  sampleCategory?: string;
+  sampleDescription?: string;
+  sampleMaterials?: string;
+  sampleImageUrl?: string;
+  sampleLeadTime?: string;
   bankDetails: {
     bankName: string;
     accountHolder: string;
@@ -207,3 +218,5 @@ export interface CommissionRecord {
   sellerNet: number;
   createdAt: string;
 }
+
+export * from './cms';

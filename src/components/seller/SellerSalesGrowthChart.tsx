@@ -130,7 +130,7 @@ export const SellerSalesGrowthChart: React.FC<SellerSalesGrowthChartProps> = ({
       return (
         <div className="bg-[#FDFBF7] border border-[#E4D9C4] rounded-2xl p-4 shadow-xl text-xs max-w-xs">
           <div className="flex items-center justify-between border-b border-[#EFE7D8] pb-2 mb-2.5">
-            <span className="font-serif font-bold text-[#2A2521] text-sm">
+            <span className="font-bold text-[#2A2521] text-sm">
               {dataPoint.dayLabel}
             </span>
             <span className="bg-[#F6EDE6] text-[#A86F47] px-2 py-0.5 rounded-full text-[10px] font-bold">
@@ -229,7 +229,7 @@ export const SellerSalesGrowthChart: React.FC<SellerSalesGrowthChartProps> = ({
           <span className="text-[10px] font-semibold uppercase tracking-wider text-[#645D56] block">
             7-Day Gross Volume
           </span>
-          <div className="font-serif text-xl font-bold text-[#2A2521] mt-0.5">
+          <div className="text-xl font-bold text-[#2A2521] mt-0.5">
             ${total7DayGross.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <span className="text-[10px] text-gray-500">{total7DayOrders} handcrafted units</span>
@@ -239,7 +239,7 @@ export const SellerSalesGrowthChart: React.FC<SellerSalesGrowthChartProps> = ({
           <span className="text-[10px] font-semibold uppercase tracking-wider text-[#6B7A52] block">
             7-Day Net Payout (95%)
           </span>
-          <div className="font-serif text-xl font-bold text-[#6B7A52] mt-0.5">
+          <div className="text-xl font-bold text-[#6B7A52] mt-0.5">
             ${total7DayNet.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <span className="text-[10px] text-[#6B7A52]/80">Available for payout</span>
@@ -249,7 +249,7 @@ export const SellerSalesGrowthChart: React.FC<SellerSalesGrowthChartProps> = ({
           <span className="text-[10px] font-semibold uppercase tracking-wider text-[#A86F47] block">
             5% Guild Deductions
           </span>
-          <div className="font-serif text-xl font-bold text-[#A86F47] mt-0.5">
+          <div className="text-xl font-bold text-[#A86F47] mt-0.5">
             ${total7DayPlatformFee.toFixed(2)}
           </div>
           <span className="text-[10px] text-gray-500">Platform maintenance</span>
@@ -259,7 +259,7 @@ export const SellerSalesGrowthChart: React.FC<SellerSalesGrowthChartProps> = ({
           <span className="text-[10px] font-semibold uppercase tracking-wider text-[#2A2521] block">
             Average Unit Sale
           </span>
-          <div className="font-serif text-xl font-bold text-[#2A2521] mt-0.5">
+          <div className="text-xl font-bold text-[#2A2521] mt-0.5">
             ${total7DayOrders > 0 ? (total7DayGross / total7DayOrders).toFixed(0) : '0'}
           </div>
           <span className="text-[10px] text-gray-500">Per craft order</span>

@@ -63,7 +63,7 @@ export const WishlistPage: React.FC = () => {
               </p>
             </div>
             <div className="text-right">
-              <span className="font-serif text-2xl font-bold text-[#A86F47]">
+              <span className="text-2xl font-bold text-[#A86F47]">
                 {favoriteProducts.length}
               </span>
               <span className="text-xs text-[#8B5E3C] block uppercase tracking-wider">
@@ -188,7 +188,7 @@ export const WishlistPage: React.FC = () => {
                         <span className="text-[10px] font-semibold uppercase tracking-wider text-[#8B5E3C] block">
                           {product.category}
                         </span>
-                        <span className="font-serif text-2xl font-bold text-[#28231F]">
+                        <span className="text-2xl font-bold text-[#28231F]">
                           ${product.price}
                         </span>
                       </div>

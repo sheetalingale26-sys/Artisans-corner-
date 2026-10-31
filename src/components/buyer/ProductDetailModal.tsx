@@ -145,7 +145,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
 
                 {/* Price and Stock */}
                 <div className="mt-3 flex items-baseline gap-3">
-                  <span className="font-serif text-3xl font-bold text-[#28231F]">
+                  <span className="text-3xl font-bold text-[#28231F]">
                     ${product.price}
                   </span>
                   <span className="text-xs text-[#6B7A52] font-semibold bg-[#EFF3EB] px-2.5 py-1 rounded-md">
@@ -217,7 +217,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                       >
                         −
                       </button>
-                      <span className="px-3.5 py-2 text-xs font-semibold font-mono text-[#28231F]">
+                      <span className="px-3.5 py-2 text-xs font-semibold text-[#28231F]">
                         {quantity}
                       </span>
                       <button

@@ -53,7 +53,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ product, onC
           </h2>
           <div className="flex items-center gap-1.5 text-xs text-[#6B7A52] mt-1">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Posting as verified buyer: <strong>{currentUser.name}</strong></span>
+            <span>Posting as verified buyer: <strong>{currentUser?.name || 'Verified Patron'}</strong></span>
           </div>
         </div>
 

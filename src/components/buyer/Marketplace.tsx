@@ -15,8 +15,11 @@ import {
   ArrowUpRight,
   Clock,
   Compass,
-  CheckCircle2
+  CheckCircle2,
+  Tag
 } from 'lucide-react';
+import { useStorefrontCmsStore } from '../../stores/storefrontCmsStore';
+import { useListingModerationStore } from '../../stores/listingModerationStore';
 
 export const Marketplace: React.FC = () => {
   const {
@@ -39,6 +42,11 @@ export const Marketplace: React.FC = () => {
   const [minRating, setMinRating] = useState<number>(0);
   const [showFiltersMobile, setShowFiltersMobile] = useState<boolean>(false);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState<boolean>(false);
+  const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
+
+  // Dynamic Storefront CMS & Moderation State from Zustand
+  const { hero, collections, announcementBar } = useStorefrontCmsStore();
+  const getListingStatus = useListingModerationStore((s) => s.getListingStatus);
 
   const categories = [
     'All',
@@ -66,8 +74,14 @@ export const Marketplace: React.FC = () => {
 
   const filteredProducts = useMemo(() => {
     return products
-      .filter((p) => p.status === 'published')
+      .filter((p) => p.status === 'published' && getListingStatus(p.id) === 'approved')
       .filter((p) => {
+        if (selectedCollectionId) {
+          const activeCol = collections.find((c) => c.id === selectedCollectionId);
+          if (activeCol && activeCol.productIds.length > 0 && !activeCol.productIds.includes(p.id)) {
+            return false;
+          }
+        }
         if (showFavoritesOnly && !isInWishlist(p.id)) return false;
         if (selectedCategory !== 'All' && p.category !== selectedCategory) return false;
         if (p.price > maxPrice) return false;
@@ -105,7 +119,17 @@ export const Marketplace: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#F4EEE6] text-[#28231F] pb-28">
       {/* ──────────────────────────────────────────────────────────── */}
-      {/* 1. TOP EDITORIAL HERO (MATCHING REFERENCE SCREENSHOT 1) */}
+      {/* 0. ANNOUNCEMENT BAR (MANAGED VIA STOREFRONT CMS) */}
+      {/* ──────────────────────────────────────────────────────────── */}
+      {announcementBar.enabled && (
+        <div className="bg-[#28231F] text-[#D8A45F] py-2 px-4 text-center text-xs font-semibold border-b border-[#443B34] flex items-center justify-center gap-2">
+          <Sparkles className="w-3.5 h-3.5 text-[#D8A45F]" />
+          <span>{announcementBar.text}</span>
+        </div>
+      )}
+
+      {/* ──────────────────────────────────────────────────────────── */}
+      {/* 1. TOP EDITORIAL HERO (DYNAMICALLY CONFIGURED VIA SUPERADMIN CMS) */}
       {/* ──────────────────────────────────────────────────────────── */}
       <section className="border-b border-[#DDD1BE]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
@@ -113,12 +137,22 @@ export const Marketplace: React.FC = () => {
             {/* Left Header & Story Tile (6 cols) */}
             <div className="lg:col-span-6 space-y-8">
               <div>
+                {hero.bannerBadgeText && (
+                  <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-[#EFE7DC] border border-[#DDD1BE] text-[#A86F47] uppercase tracking-wider mb-3">
+                    {hero.bannerBadgeText}
+                  </span>
+                )}
                 <h1 className="font-serif text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-[#28231F] leading-[1.06]">
-                  Hand-touched <br />
+                  {hero.headlinePrefix} <br />
                   by the{' '}
                   <span className="relative inline-block text-[#A86F47] decoration-[#A86F47]/50 underline underline-offset-8">
-                    earth
+                    {hero.highlightedWord}
                   </span>
+                  {hero.headlineSuffix && (
+                    <span className="block text-2xl sm:text-3xl font-normal text-[#645D56] mt-2">
+                      {hero.headlineSuffix}
+                    </span>
+                  )}
                 </h1>
               </div>
 
@@ -133,7 +167,7 @@ export const Marketplace: React.FC = () => {
                 </div>
                 <div className="border-l border-[#DDD1BE] pl-4">
                   <p className="text-xs text-[#8B5E3C] leading-relaxed italic">
-                    "Each curve, texture, and wood-ash glaze tells an intimate story of fire and patience."
+                    "{hero.subheadline || 'Each curve, texture, and wood-ash glaze tells an intimate story of fire and patience.'}"
                   </p>
                 </div>
               </div>
@@ -172,7 +206,7 @@ export const Marketplace: React.FC = () => {
                       Earthen Amphora No. 4
                     </span>
                   </div>
-                  <span className="font-serif text-lg font-bold text-[#28231F]">$135</span>
+                  <span className="text-lg font-bold text-[#28231F]">$135</span>
                 </div>
               </div>
             </div>
@@ -183,7 +217,7 @@ export const Marketplace: React.FC = () => {
               <div className="bg-[#EFE7DC] p-4 rounded-2xl border border-[#DDD1BE] text-left lg:text-right w-full sm:w-auto shadow-xs">
                 <div className="text-xs font-serif font-bold text-[#28231F]">Get Custom Plan</div>
                 <div className="text-xs text-[#8B5E3C] mt-1">
-                  <strong className="text-[#A86F47] font-mono">15 days</strong> delivery <br />
+                  <strong className="text-[#A86F47] font-semibold">15 days</strong> delivery <br />
                   for custom satisfaction
                 </div>
               </div>
@@ -192,19 +226,111 @@ export const Marketplace: React.FC = () => {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
-                    const catalogEl = document.getElementById('curated-catalog');
-                    catalogEl?.scrollIntoView({ behavior: 'smooth' });
+                    if (hero.ctaPrimaryTarget === 'studio') {
+                      open3DStudioWithModel('amphora-vase');
+                    } else {
+                      const catalogEl = document.getElementById('curated-catalog');
+                      catalogEl?.scrollIntoView({ behavior: 'smooth' });
+                    }
                   }}
-                  className="group flex items-center justify-center gap-2 px-5 py-4 rounded-full bg-[#28231F] hover:bg-[#A86F47] text-[#F4EEE6] text-xs font-bold tracking-wider uppercase shadow-xl transition-all active:scale-95 cursor-pointer"
+                  className="group flex items-center justify-center gap-2 px-6 py-4 rounded-full bg-[#28231F] hover:bg-[#A86F47] text-[#F4EEE6] text-xs font-bold tracking-wider uppercase shadow-xl transition-all active:scale-95 cursor-pointer"
                 >
                   <span className="text-sm font-signature text-[#D8A45F] group-hover:text-white">~</span>
-                  <span>LET'S SHOP !</span>
+                  <span>{hero.ctaPrimaryText ? hero.ctaPrimaryText.toUpperCase() : "LET'S SHOP !"}</span>
                 </button>
               </div>
             </div>
           </div>
         </div>
       </section>
+
+      {/* ──────────────────────────────────────────────────────────── */}
+      {/* 1.5 DYNAMIC CURATED COLLECTIONS SHOWCASE (MANAGED VIA SUPERADMIN CMS) */}
+      {/* ──────────────────────────────────────────────────────────── */}
+      {collections.filter((c) => c.featuredOnHome && c.isPublished).length > 0 && (
+        <section className="py-12 border-b border-[#DDD1BE] bg-[#EFE7DC]/50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+              <div>
+                <span className="inline-block px-3 py-1 rounded-full bg-[#F4EEE6] border border-[#DDD1BE] text-[11px] font-bold text-[#A86F47] uppercase tracking-wider mb-2">
+                  Curated Themes
+                </span>
+                <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#28231F]">
+                  Curated Collections from Master Ateliers
+                </h3>
+                <p className="text-xs text-[#645D56] mt-1">
+                  Handpicked thematic groupings assembled by our platform curators.
+                </p>
+              </div>
+
+              {selectedCollectionId && (
+                <button
+                  onClick={() => setSelectedCollectionId(null)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#A86F47] bg-[#F6EDE6] border border-[#E8DEC8] hover:bg-[#EFE7DC] self-start sm:self-auto cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>Clear Collection Filter</span>
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {collections
+                .filter((c) => c.featuredOnHome && c.isPublished)
+                .map((col) => {
+                  const isSelected = selectedCollectionId === col.id;
+                  return (
+                    <div
+                      key={col.id}
+                      onClick={() => {
+                        setSelectedCollectionId(isSelected ? null : col.id);
+                        const catalogEl = document.getElementById('curated-catalog');
+                        catalogEl?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className={`group p-4 rounded-3xl border transition-all cursor-pointer overflow-hidden ${
+                        isSelected
+                          ? 'bg-[#FFFCF7] border-[#A86F47] ring-2 ring-[#A86F47]/30 shadow-md'
+                          : 'bg-[#FFFCF7] border-[#E8DEC8] hover:border-[#A86F47]/60 shadow-xs hover:shadow-md'
+                      }`}
+                    >
+                      <div className="relative h-44 rounded-2xl overflow-hidden mb-3.5">
+                        <img
+                          src={col.coverImageUrl}
+                          alt={col.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        {col.badge && (
+                          <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#28231F]/90 text-[#D8A45F] backdrop-blur-xs border border-white/10">
+                            {col.badge}
+                          </span>
+                        )}
+                        {isSelected && (
+                          <span className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#6B7A52] text-white">
+                            Active Filter ✓
+                          </span>
+                        )}
+                      </div>
+
+                      <h4 className="font-serif text-lg font-bold text-[#28231F] leading-tight group-hover:text-[#A86F47] transition-colors">
+                        {col.title}
+                      </h4>
+                      <p className="text-xs text-[#645D56] mt-1 line-clamp-2">{col.subtitle}</p>
+
+                      <div className="mt-3 pt-2.5 border-t border-[#E8DEC8] flex items-center justify-between text-xs">
+                        <span className="text-[11px] font-semibold text-[#8A7E72]">
+                          {col.productIds.length} Artifacts
+                        </span>
+                        <span className="text-xs font-bold text-[#A86F47] group-hover:underline">
+                          {isSelected ? 'Viewing Selection' : 'Explore Collection →'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ──────────────────────────────────────────────────────────── */}
       {/* 2. EDITORIAL MOSAIC: "Enhance your living space with adorable pottery" */}
@@ -288,7 +414,7 @@ export const Marketplace: React.FC = () => {
                 />
               </div>
               <div className="text-center">
-                <div className="font-serif text-3xl font-bold text-[#A86F47]">40+</div>
+                <div className="text-3xl font-bold text-[#A86F47]">40+</div>
                 <div className="text-xs font-semibold text-[#28231F] mt-0.5">
                   Years of Wheel-Thrown Storytelling
                 </div>
@@ -348,7 +474,7 @@ export const Marketplace: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <div className="text-sm font-serif font-bold">15 Days</div>
+                  <div className="text-sm font-bold">15 Days</div>
                   <div className="text-[11px] text-white/80 mt-0.5">Custom studio plan satisfaction</div>
                   <div className="mt-2 text-[10px] font-bold uppercase tracking-wider text-[#D8A45F] flex items-center gap-1">
                     CUSTOM ORDER <ArrowUpRight className="w-3 h-3" />
@@ -507,7 +633,7 @@ export const Marketplace: React.FC = () => {
               <div>
                 <div className="flex justify-between font-semibold mb-1 text-[#28231F]">
                   <span>Max Price:</span>
-                  <span className="font-mono text-[#A86F47] font-bold">${maxPrice}</span>
+                  <span className="text-[#A86F47] font-bold">${maxPrice}</span>
                 </div>
                 <input
                   type="range"
@@ -724,7 +850,7 @@ export const Marketplace: React.FC = () => {
                           {product.category}
                         </span>
                         <div className="flex items-baseline gap-1">
-                          <span className="font-serif text-2xl font-bold text-[#28231F]">
+                          <span className="text-2xl font-bold text-[#28231F]">
                             ${product.price}
                           </span>
                           <span className="text-[10px] text-gray-500">USD</span>
@@ -804,7 +930,7 @@ export const Marketplace: React.FC = () => {
                   <div className="font-signature text-xl text-[#A86F47] font-bold">
                     Santorini Studio
                   </div>
-                  <div className="text-[10px] text-[#8B5E3C] font-mono">1987 — 2026</div>
+                  <div className="text-[10px] text-[#8B5E3C] font-medium">1987 — 2026</div>
                 </div>
               </div>
             </div>
