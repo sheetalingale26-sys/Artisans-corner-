@@ -15,6 +15,15 @@ import {
   AlertCircle
 } from 'lucide-react';
 
+const CRAFT_CATEGORIES = [
+  'Ceramics & Pottery',
+  'Woodwork & Carving',
+  'Jewelry & Metals',
+  'Textiles & Weaving',
+  'Glassblowing & Stained Glass',
+  'Leathercraft & Bookbinding'
+];
+
 interface AuthPageProps {
   initialMode?: 'login' | 'register';
   onSuccess?: () => void;
@@ -24,12 +33,18 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login', onSuc
   const { login, register, loginWithGoogle, setActiveTab, showToast } = useApp();
 
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
+  const [accountType, setAccountType] = useState<'buyer' | 'seller'>('buyer');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(true);
+
+  // Essential required details for Seller
+  const [shopName, setShopName] = useState('');
+  const [craftCategory, setCraftCategory] = useState('Ceramics & Pottery');
+  const [location, setLocation] = useState('');
 
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,6 +76,16 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login', onSuc
         setError('Please enter your full name.');
         return false;
       }
+      if (accountType === 'seller') {
+        if (!shopName.trim()) {
+          setError('Please provide your studio or shop name.');
+          return false;
+        }
+        if (!location.trim()) {
+          setError('Please enter your studio city or workshop location.');
+          return false;
+        }
+      }
       if (password !== confirmPassword) {
         setError('Passwords do not match. Please verify.');
         return false;
@@ -90,7 +115,18 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login', onSuc
           if (onSuccess) onSuccess();
         }
       } else {
-        const res = await register(name, email, password);
+        const res = await register(
+          name,
+          email,
+          password,
+          accountType === 'seller'
+            ? {
+                shopName: shopName.trim(),
+                craftCategory,
+                location: location.trim()
+              }
+            : undefined
+        );
         if (!res.success) {
           setError(res.error || 'Registration failed. Please try again.');
         } else {
@@ -231,6 +267,98 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login', onSuc
           {/* Auth Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'register' && (
+              <div className="mb-2">
+                <label className="block text-xs font-semibold text-[#28231F] mb-1.5">
+                  I want to join as:
+                </label>
+                <div className="grid grid-cols-2 gap-2 p-1 bg-[#EFE7DC] rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setAccountType('buyer')}
+                    className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      accountType === 'buyer'
+                        ? 'bg-[#FFFCF7] text-[#28231F] shadow-xs'
+                        : 'text-[#645D56] hover:text-[#28231F]'
+                    }`}
+                  >
+                    <span>🛍️ Buyer</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAccountType('seller')}
+                    className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      accountType === 'seller'
+                        ? 'bg-[#A86F47] text-white shadow-xs'
+                        : 'text-[#645D56] hover:text-[#28231F]'
+                    }`}
+                  >
+                    <Store className="w-3.5 h-3.5" />
+                    <span>Artisan / Seller</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {mode === 'register' && accountType === 'seller' && (
+              <div className="p-4 rounded-2xl bg-[#F6EDE6]/80 border border-[#E4D9C4] space-y-3.5 animate-in fade-in">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#A86F47]">
+                  <Store className="w-4 h-4" />
+                  <span>Required Studio Details</span>
+                </div>
+                <p className="text-[11px] text-[#645D56] leading-tight">
+                  Just provide your studio name and craft to open your shop. You can complete your full story, photos, and payout banking anytime inside your Seller Dashboard!
+                </p>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#28231F] mb-1">
+                    Studio / Shop Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={shopName}
+                    onChange={(e) => setShopName(e.target.value)}
+                    placeholder="e.g. Nordic Clay Studio"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#E4D9C4] bg-white text-xs sm:text-sm text-[#28231F] placeholder-[#A09384] focus:outline-none focus:ring-2 focus:ring-[#A86F47]/30 focus:border-[#A86F47]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#28231F] mb-1">
+                      Craft Discipline *
+                    </label>
+                    <select
+                      value={craftCategory}
+                      onChange={(e) => setCraftCategory(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#E4D9C4] bg-white text-xs sm:text-sm text-[#28231F] focus:outline-none focus:ring-2 focus:ring-[#A86F47]/30 focus:border-[#A86F47]"
+                    >
+                      {CRAFT_CATEGORIES.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#28231F] mb-1">
+                      Studio City / Location *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      placeholder="e.g. Portland, OR"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#E4D9C4] bg-white text-xs sm:text-sm text-[#28231F] placeholder-[#A09384] focus:outline-none focus:ring-2 focus:ring-[#A86F47]/30 focus:border-[#A86F47]"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {mode === 'register' && (
               <div>
                 <label className="block text-xs font-semibold text-[#28231F] mb-1.5">
                   Full Name
@@ -349,7 +477,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login', onSuc
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  <span>{mode === 'login' ? 'Sign In to Account' : 'Create Buyer Account'}</span>
+                  <span>
+                    {mode === 'login'
+                      ? 'Sign In to Account'
+                      : accountType === 'seller'
+                      ? 'Open Studio & Enter Seller Dashboard'
+                      : 'Create Buyer Account'}
+                  </span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}

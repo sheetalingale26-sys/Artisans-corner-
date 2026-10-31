@@ -65,6 +65,58 @@ export const SEED_USERS: User[] = [
     status: 'active'
   },
   {
+    id: 'user-sheetal-seller',
+    name: 'Sheetal1 (Seller)',
+    email: 'sheetal1@gmail.com',
+    role: 'seller',
+    isSellerApproved: true,
+    sellerProfileId: 'seller-sheetal-1',
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80',
+    phone: '+1 (555) 789-0123',
+    address: {
+      fullName: 'Sheetal Seller',
+      street: '18 Artisan Atelier Way',
+      city: 'Portland',
+      state: 'OR',
+      zipCode: '97201',
+      country: 'United States',
+      phone: '+1 (555) 789-0123'
+    },
+    joinedDate: '2025-02-10',
+    status: 'active'
+  },
+  {
+    id: 'user-sheetal-buyer',
+    name: 'Sheetal2 (Buyer)',
+    email: 'sheetal2@gmail.com',
+    role: 'buyer',
+    isSellerApproved: false,
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+    phone: '+1 (555) 456-7890',
+    address: {
+      fullName: 'Sheetal Buyer',
+      street: '25 Craft Collector Blvd',
+      city: 'Seattle',
+      state: 'WA',
+      zipCode: '98101',
+      country: 'United States',
+      phone: '+1 (555) 456-7890'
+    },
+    joinedDate: '2025-03-01',
+    status: 'active'
+  },
+  {
+    id: 'user-sheetal-admin',
+    name: 'Sheetal3 (Admin)',
+    email: 'sheetal3@gmail.com',
+    role: 'admin',
+    isSellerApproved: false,
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
+    phone: '+1 (555) 123-4567',
+    joinedDate: '2025-01-01',
+    status: 'active'
+  },
+  {
     id: 'user-applicant-1',
     name: 'Hannah Morales',
     email: 'hannah.morales@loomtextiles.co',
@@ -184,6 +236,30 @@ export const SEED_SELLERS: SellerProfile[] = [
     },
     verificationStatus: 'verified',
     joinedDate: '2025-05-20'
+  },
+  {
+    id: 'seller-sheetal-1',
+    userId: 'user-sheetal-seller',
+    shopName: "Sheetal's Heritage Atelier",
+    tagline: 'Ancestral stoneware ceramics and natural-fiber studio weaving.',
+    bio: 'Dedicated to preserving ancestral craftsmanship through stoneware ceramics and natural-fiber studio weaving. Every piece is handcrafted in limited batches.',
+    craftCategory: 'Ceramics & Pottery',
+    location: 'Portland, Oregon',
+    avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=1200&q=80',
+    rating: 5.0,
+    totalSales: 18,
+    grossRevenue: 2850,
+    netEarnings: 2707.5,
+    availablePayout: 850,
+    bankDetails: {
+      bankName: 'First Artisan National Bank',
+      accountHolder: 'Sheetal Seller',
+      routingNumber: '121000358',
+      accountNumberLast4: '4892'
+    },
+    verificationStatus: 'verified',
+    joinedDate: '2025-02-10'
   }
 ];
 

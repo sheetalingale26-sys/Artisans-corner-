@@ -46,7 +46,11 @@ export const SellerDashboard: React.FC = () => {
     isSellerApproved,
     setIsBecomeSellerOpen,
     switchRole,
-    setActiveTab: setGlobalActiveTab
+    setActiveTab: setGlobalActiveTab,
+    showToast,
+    currentUser,
+    currentRole,
+    sellers
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'earnings' | 'profile'>('products');
@@ -75,21 +79,52 @@ export const SellerDashboard: React.FC = () => {
     model3dType: 'amphora-vase' as CraftModelType
   });
 
+  const seller =
+    currentSellerProfile ||
+    (currentUser ? sellers.find((s) => s.userId === currentUser.id) : undefined);
+  const isClassifiedSeller =
+    isSellerApproved || currentUser?.role === 'seller' || currentRole === 'seller' || Boolean(seller);
+
   // Store Profile edit state
   const [profileData, setProfileData] = useState({
-    shopName: currentSellerProfile?.shopName || '',
-    tagline: currentSellerProfile?.tagline || '',
-    bio: currentSellerProfile?.bio || '',
-    craftCategory: currentSellerProfile?.craftCategory || 'Ceramics & Pottery',
-    location: currentSellerProfile?.location || '',
-    bankName: currentSellerProfile?.bankDetails.bankName || '',
-    accountHolder: currentSellerProfile?.bankDetails.accountHolder || '',
-    routingNumber: currentSellerProfile?.bankDetails.routingNumber || '',
-    accountNumberLast4: currentSellerProfile?.bankDetails.accountNumberLast4 || ''
+    shopName: seller?.shopName || '',
+    tagline: seller?.tagline || '',
+    bio: seller?.bio || '',
+    craftCategory: seller?.craftCategory || 'Ceramics & Pottery',
+    location: seller?.location || '',
+    bankName: seller?.bankDetails?.bankName || '',
+    accountHolder: seller?.bankDetails?.accountHolder || '',
+    routingNumber: seller?.bankDetails?.routingNumber || '',
+    accountNumberLast4: seller?.bankDetails?.accountNumberLast4 || ''
   });
 
-  const seller = currentSellerProfile;
-  if (!isSellerApproved || !seller) {
+  useEffect(() => {
+    if (seller) {
+      setProfileData({
+        shopName: seller.shopName || '',
+        tagline: seller.tagline || '',
+        bio: seller.bio || '',
+        craftCategory: seller.craftCategory || 'Ceramics & Pottery',
+        location: seller.location || '',
+        bankName: seller.bankDetails?.bankName || '',
+        accountHolder: seller.bankDetails?.accountHolder || '',
+        routingNumber: seller.bankDetails?.routingNumber || '',
+        accountNumberLast4: seller.bankDetails?.accountNumberLast4 || ''
+      });
+    }
+  }, [seller]);
+
+  const hasBio = Boolean(
+    seller?.bio && seller.bio.length >= 30 && !seller.bio.startsWith('Artisan workshop specializing in handcrafted')
+  );
+  const hasBank = Boolean(seller?.bankDetails?.bankName && seller.bankDetails?.routingNumber);
+
+  let completenessScore = 40;
+  if (hasBio) completenessScore += 30;
+  if (hasBank) completenessScore += 30;
+  const isProfileComplete = completenessScore >= 100;
+
+  if (!isClassifiedSeller || !seller) {
     if (currentUserApplication?.status === 'rejected') {
       return (
         <div className="min-h-[75vh] flex items-center justify-center p-4 sm:p-6 bg-[#F4EEE6]">
@@ -194,25 +229,27 @@ export const SellerDashboard: React.FC = () => {
       return (
         <div className="min-h-[75vh] flex items-center justify-center p-4 sm:p-6 bg-[#F4EEE6]">
           <div className="max-w-md w-full p-8 bg-[#FFFCF7] rounded-3xl border border-[#E4D9C4] shadow-2xl text-center">
-            <div className="w-16 h-16 rounded-2xl bg-[#F6EDE6] text-[#A86F47] mx-auto flex items-center justify-center mb-4 border border-[#E8DEC8] shadow-xs">
-              <Clock className="w-8 h-8 animate-pulse" />
+            <div className="w-16 h-16 rounded-2xl bg-[#EFF3EB] text-[#6B7A52] mx-auto flex items-center justify-center mb-4 border border-[#D9E3D3] shadow-xs">
+              <Store className="w-8 h-8 text-[#6B7A52]" />
             </div>
-            <span className="inline-block px-3 py-1 rounded-full bg-[#F6EDE6] border border-[#E8DEC8] text-xs font-semibold text-[#A86F47] uppercase tracking-wider mb-2">
-              Application Under Review
+            <span className="inline-block px-3 py-1 rounded-full bg-[#EFF3EB] border border-[#D9E3D3] text-xs font-semibold text-[#6B7A52] uppercase tracking-wider mb-2">
+              Studio Ready
             </span>
             <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#28231F]">
               "{currentUserApplication.shopName}"
             </h2>
             <p className="text-xs sm:text-sm text-[#645D56] mt-2 mb-6 leading-relaxed">
-              Our platform curation team is currently reviewing your artisan dossier. Review usually completes within 24–48 hours.
+              Your artisan studio is classified and ready! You have direct access to your Seller Dashboard to add products, preview in 3D, and complete your profile.
             </p>
             <div className="flex flex-col gap-2.5">
               <button
                 type="button"
-                onClick={() => setIsBecomeSellerOpen(true)}
+                onClick={() => {
+                  switchRole('seller');
+                }}
                 className="w-full py-3 px-4 rounded-xl bg-[#A86F47] hover:bg-[#8F5732] text-white text-xs sm:text-sm font-semibold shadow-xs transition-colors cursor-pointer"
               >
-                View Application Details
+                Enter Seller Dashboard
               </button>
               <button
                 type="button"
@@ -370,6 +407,7 @@ export const SellerDashboard: React.FC = () => {
         accountNumberLast4: profileData.accountNumberLast4
       }
     });
+    showToast('Studio profile and payout banking details saved successfully!', 'success');
   };
 
   const handlePayoutSubmit = (e: React.FormEvent) => {
@@ -423,8 +461,16 @@ export const SellerDashboard: React.FC = () => {
 
             <div className="flex items-center gap-2.5">
               <button
+                type="button"
+                onClick={() => setActiveTab('profile')}
+                className="flex items-center gap-1.5 px-3.5 py-2.5 bg-white hover:bg-[#FAF6F0] text-[#28231F] border border-[#D8C7B0] rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer"
+              >
+                <Edit2 className="w-3.5 h-3.5 text-[#A86F47]" />
+                <span>Complete Profile</span>
+              </button>
+              <button
                 onClick={handleOpenAdd}
-                className="flex items-center gap-2 px-4 py-2.5 bg-[#A86F47] hover:bg-[#8F5732] text-white rounded-xl text-xs font-semibold shadow-md transition-all active:scale-95"
+                className="flex items-center gap-2 px-4 py-2.5 bg-[#A86F47] hover:bg-[#8F5732] text-white rounded-xl text-xs font-semibold shadow-md transition-all active:scale-95 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>Add Studio Piece</span>
@@ -492,6 +538,51 @@ export const SellerDashboard: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Profile Completion Callout */}
+        {!isProfileComplete && (
+          <div className="mb-8 p-5 sm:p-6 bg-gradient-to-r from-[#FAF5EE] via-[#F6EFE6] to-[#EFE4D6] rounded-3xl border border-[#D8C7B0] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in">
+            <div className="space-y-1.5 max-w-2xl">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#A86F47]/15 text-[#8F5732] text-xs font-bold uppercase tracking-wider">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Studio Setup: {completenessScore}% Complete
+                </span>
+                <span className="text-xs text-[#645D56] font-medium">
+                  Profile Completion Options Available
+                </span>
+              </div>
+              <h3 className="font-serif text-lg sm:text-xl font-bold text-[#28231F]">
+                Complete your Studio Story & Direct Payout Banking
+              </h3>
+              <p className="text-xs sm:text-sm text-[#645D56] leading-relaxed">
+                You are classified as an active seller! You can immediately manage products, fulfill orders, and showcase your craftsmanship. Complete your bank routing details for automatic 95% payouts and share your heritage story.
+              </p>
+              <div className="flex flex-wrap gap-2 pt-1 text-[11px] font-medium text-[#7C6E61]">
+                {!hasBank && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/80 border border-[#E0D3C1] text-amber-900 font-semibold">
+                    ⚠️ Add Bank for 95% Automated Payouts
+                  </span>
+                )}
+                {!hasBio && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/80 border border-[#E0D3C1]">
+                    📝 Studio Story & Craft Heritage
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="shrink-0 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setActiveTab('profile')}
+                className="px-5 py-3 rounded-xl bg-[#A86F47] hover:bg-[#8F5732] text-white text-xs sm:text-sm font-semibold shadow-xs transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <Edit2 className="w-4 h-4" />
+                <span>Complete Profile Now</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* 7-Day Performance & Sales Growth Line Chart (Recharts) */}
         <SellerSalesGrowthChart

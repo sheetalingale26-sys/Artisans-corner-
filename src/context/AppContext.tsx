@@ -46,7 +46,8 @@ export const AUTHORIZED_ADMIN_EMAILS = [
   'marcus.vance@artisanscorner.org',
   'director@artisanscorner.org',
   'admin@artisans-corner.com',
-  'sheetalingale26@gmail.com'
+  'sheetalingale26@gmail.com',
+  'sheetal3@gmail.com'
 ];
 
 interface AppContextType {
@@ -55,7 +56,18 @@ interface AppContextType {
   currentRole: UserRole;
   authLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (
+    name: string,
+    email: string,
+    password: string,
+    sellerDetails?: { shopName: string; craftCategory: string; location: string }
+  ) => Promise<{ success: boolean; error?: string }>;
+  quickOnboardSeller: (details: {
+    shopName: string;
+    craftCategory: string;
+    location: string;
+    tagline?: string;
+  }) => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   switchRole: (role: UserRole) => void;
@@ -569,8 +581,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Register action strictly for Buyer account with validation
-  const register = async (name: string, email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+  // Register action for Buyer or instant Seller account with validation
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    sellerDetails?: { shopName: string; craftCategory: string; location: string }
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
       setAuthLoading(true);
       const nameClean = name.trim();
@@ -579,6 +596,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!nameClean) return { success: false, error: 'Please enter your full name.' };
       if (!emailClean || !emailClean.includes('@')) return { success: false, error: 'Please enter a valid email address.' };
       if (!password || password.length < 6) return { success: false, error: 'Password must be at least 6 characters long.' };
+
+      if (sellerDetails) {
+        if (!sellerDetails.shopName.trim()) {
+          return { success: false, error: 'Please provide your studio or shop name.' };
+        }
+        if (!sellerDetails.location.trim()) {
+          return { success: false, error: 'Please provide your studio city / location.' };
+        }
+      }
 
       // Ensure user does not already exist locally
       const existing = users.find((u) => u.email.toLowerCase() === emailClean.toLowerCase());
@@ -600,14 +626,69 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Check if this registered email is in the authorized admin list
       const isAuthorizedAdmin = AUTHORIZED_ADMIN_EMAILS.includes(emailClean.toLowerCase());
+      const userId = firebaseUid || ('user-' + Date.now());
+      const isSeller = Boolean(sellerDetails) && !isAuthorizedAdmin;
+      const sellerId = isSeller ? (`seller-${userId}`) : undefined;
+
+      if (isSeller && sellerDetails) {
+        const validSellerId = sellerId || `seller-${userId}`;
+        const newSellerProfile: SellerProfile = {
+          id: validSellerId,
+          userId: userId,
+          shopName: sellerDetails.shopName.trim(),
+          tagline: 'Handcrafted ' + sellerDetails.craftCategory + ' Studio',
+          bio: 'Artisan workshop specializing in handcrafted ' + sellerDetails.craftCategory + '. Based in ' + sellerDetails.location.trim() + '.',
+          craftCategory: sellerDetails.craftCategory,
+          location: sellerDetails.location.trim(),
+          avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+          bannerUrl: getCategoryWorkshopDefault(sellerDetails.craftCategory),
+          rating: 5.0,
+          totalSales: 0,
+          grossRevenue: 0,
+          netEarnings: 0,
+          availablePayout: 0,
+          bankDetails: {
+            bankName: '',
+            accountHolder: nameClean,
+            routingNumber: '',
+            accountNumberLast4: ''
+          },
+          verificationStatus: 'verified',
+          joinedDate: new Date().toISOString().split('T')[0]
+        };
+
+        const newApp: SellerApplication = {
+          id: 'app-' + userId,
+          userId: userId,
+          userName: nameClean,
+          userEmail: emailClean,
+          userAvatar: newSellerProfile.avatarUrl,
+          shopName: sellerDetails.shopName.trim(),
+          tagline: newSellerProfile.tagline,
+          bio: newSellerProfile.bio,
+          craftCategory: sellerDetails.craftCategory,
+          location: sellerDetails.location.trim(),
+          phone: '+1 (555) 000-0000',
+          workshopAddress: sellerDetails.location.trim() + ' Artisan Workshop',
+          workshopPhotoUrl: newSellerProfile.bannerUrl,
+          yearsOfExperience: '1-3 years',
+          bankDetails: newSellerProfile.bankDetails,
+          submittedAt: new Date().toISOString(),
+          status: 'approved'
+        };
+
+        setSellers((prev) => [newSellerProfile, ...prev.filter((s) => s.userId !== userId)]);
+        setSellerApplications((prev) => [newApp, ...prev.filter((a) => a.userId !== userId)]);
+      }
 
       const newUser: User = {
-        id: firebaseUid || `user-${Date.now()}`,
+        id: userId,
         name: nameClean,
         email: emailClean,
-        role: isAuthorizedAdmin ? 'admin' : 'buyer',
-        isSellerApproved: false,
-        avatar: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80`,
+        role: isAuthorizedAdmin ? 'admin' : isSeller ? 'seller' : 'buyer',
+        isSellerApproved: isSeller,
+        sellerProfileId: sellerId,
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
         joinedDate: new Date().toISOString().split('T')[0],
         status: 'active'
       };
@@ -615,12 +696,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setUsers((prev) => [newUser, ...prev]);
       setCurrentUser(newUser);
       setCurrentRole(newUser.role);
-      setActiveTab(newUser.role === 'admin' ? 'admin-dashboard' : 'marketplace');
+      setActiveTab(
+        newUser.role === 'admin'
+          ? 'admin-dashboard'
+          : newUser.role === 'seller'
+          ? 'seller-dashboard'
+          : 'marketplace'
+      );
 
       // Save new user data to Firestore
       await saveUserToFirestore(newUser);
 
-      showToast(`Account created successfully! Welcome to Artisan’s Corner, ${nameClean}.`, 'success');
+      showToast(
+        isSeller
+          ? `Welcome Artisan, ${nameClean}! Your Studio is ready. You can complete your profile anytime in the dashboard.`
+          : `Account created successfully! Welcome to Artisan’s Corner, ${nameClean}.`,
+        'success'
+      );
       return { success: true };
     } catch (err: any) {
       console.error('Registration error:', err);
@@ -628,6 +720,104 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } finally {
       setAuthLoading(false);
     }
+  };
+
+  // Quick Onboard an existing logged-in user as a Seller with required details
+  const quickOnboardSeller = async (details: {
+    shopName: string;
+    craftCategory: string;
+    location: string;
+    tagline?: string;
+  }): Promise<{ success: boolean; error?: string }> => {
+    if (!currentUser) {
+      showToast('Please sign in before opening a studio', 'warning');
+      setActiveTab('login');
+      return { success: false, error: 'Sign in required.' };
+    }
+
+    if (!details.shopName.trim()) {
+      return { success: false, error: 'Please enter your studio or shop name.' };
+    }
+    if (!details.location.trim()) {
+      return { success: false, error: 'Please enter your studio city / location.' };
+    }
+
+    const sellerId = currentUser.sellerProfileId || ('seller-' + currentUser.id);
+    const newSellerProfile: SellerProfile = {
+      id: sellerId,
+      userId: currentUser.id,
+      shopName: details.shopName.trim(),
+      tagline: details.tagline?.trim() || ('Handcrafted ' + details.craftCategory + ' Studio'),
+      bio:
+        currentSellerProfile?.bio ||
+        ('Artisan workshop specializing in handcrafted ' + details.craftCategory + '. Based in ' + details.location.trim() + '.'),
+      craftCategory: details.craftCategory,
+      location: details.location.trim(),
+      avatarUrl: currentUser.avatar,
+      bannerUrl: currentSellerProfile?.bannerUrl || getCategoryWorkshopDefault(details.craftCategory),
+      rating: currentSellerProfile?.rating || 5.0,
+      totalSales: currentSellerProfile?.totalSales || 0,
+      grossRevenue: currentSellerProfile?.grossRevenue || 0,
+      netEarnings: currentSellerProfile?.netEarnings || 0,
+      availablePayout: currentSellerProfile?.availablePayout || 0,
+      bankDetails: currentSellerProfile?.bankDetails || {
+        bankName: '',
+        accountHolder: currentUser.name,
+        routingNumber: '',
+        accountNumberLast4: ''
+      },
+      verificationStatus: 'verified',
+      joinedDate: currentSellerProfile?.joinedDate || new Date().toISOString().split('T')[0]
+    };
+
+    const newApp: SellerApplication = {
+      id: 'app-' + currentUser.id,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      userEmail: currentUser.email,
+      userAvatar: currentUser.avatar,
+      shopName: details.shopName.trim(),
+      tagline: newSellerProfile.tagline,
+      bio: newSellerProfile.bio,
+      craftCategory: details.craftCategory,
+      location: details.location.trim(),
+      phone: currentUser.phone || '+1 (555) 000-0000',
+      workshopAddress: details.location.trim() + ' Artisan Workshop',
+      workshopPhotoUrl: newSellerProfile.bannerUrl,
+      yearsOfExperience: '1-3 years',
+      bankDetails: newSellerProfile.bankDetails,
+      submittedAt: new Date().toISOString(),
+      status: 'approved'
+    };
+
+    setSellers((prev) => [newSellerProfile, ...prev.filter((s) => s.userId !== currentUser.id)]);
+    setSellerApplications((prev) => [newApp, ...prev.filter((a) => a.userId !== currentUser.id)]);
+
+    const updatedUser: User = {
+      ...currentUser,
+      role: currentUser.role === 'admin' ? 'admin' : 'seller',
+      isSellerApproved: true,
+      sellerProfileId: sellerId,
+      sellerApplication: newApp
+    };
+
+    setCurrentUser(updatedUser);
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === currentUser.id || u.email.toLowerCase() === currentUser.email.toLowerCase() ? updatedUser : u
+      )
+    );
+    setCurrentRole('seller');
+    setActiveTab('seller-dashboard');
+    setIsBecomeSellerOpen(false);
+
+    await saveUserToFirestore(updatedUser);
+
+    showToast(
+      'Congratulations, ' + currentUser.name + '! Your Artisan Studio is ready. Complete your profile details whenever you like.',
+      'success'
+    );
+    return { success: true };
   };
 
   // Google Sign-In
@@ -771,25 +961,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     formData: Omit<SellerApplication, 'id' | 'userId' | 'userName' | 'userEmail' | 'submittedAt' | 'status'>
   ): Promise<{ success: boolean; error?: string }> => {
     if (!currentUser) {
-      showToast('Please sign in before submitting an artisan application', 'warning');
+      showToast('Please sign in before opening a studio', 'warning');
       setActiveTab('login');
       return { success: false, error: 'Sign in required.' };
     }
 
-    if (currentUser.isSellerApproved) {
-      showToast('Your account is already an approved Artisan Seller!', 'info');
-      return { success: true };
-    }
+    const sellerId = currentUser.sellerProfileId || ('seller-' + currentUser.id);
+    const newSellerProfile: SellerProfile = {
+      id: sellerId,
+      userId: currentUser.id,
+      shopName: formData.shopName.trim(),
+      tagline: formData.tagline?.trim() || ('Handcrafted ' + formData.craftCategory),
+      bio: formData.bio?.trim() || ('Artisan workshop specializing in handcrafted ' + formData.craftCategory + '.'),
+      craftCategory: formData.craftCategory,
+      location: formData.location.trim(),
+      avatarUrl: currentUser.avatar,
+      bannerUrl: formData.workshopPhotoUrl || getCategoryWorkshopDefault(formData.craftCategory),
+      rating: 5.0,
+      totalSales: 0,
+      grossRevenue: 0,
+      netEarnings: 0,
+      availablePayout: 0,
+      bankDetails: formData.bankDetails || {
+        bankName: '',
+        accountHolder: currentUser.name,
+        routingNumber: '',
+        accountNumberLast4: ''
+      },
+      verificationStatus: 'verified',
+      joinedDate: new Date().toISOString().split('T')[0]
+    };
+
+    setSellers((prev) => [newSellerProfile, ...prev.filter((s) => s.userId !== currentUser.id)]);
 
     const newApp: SellerApplication = {
       ...formData,
-      id: currentUserApplication?.id || `app-${Date.now()}`,
+      id: currentUserApplication?.id || ('app-' + currentUser.id),
       userId: currentUser.id,
       userName: currentUser.name,
       userEmail: currentUser.email,
       userAvatar: currentUser.avatar,
       submittedAt: new Date().toISOString(),
-      status: 'pending',
+      status: 'approved',
       adminNotes: undefined
     };
 
@@ -803,10 +1016,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       )
     ]);
 
-    // Attach application to user object
     const updatedUser: User = {
       ...currentUser,
-      isSellerApproved: false,
+      role: currentUser.role === 'admin' ? 'admin' : 'seller',
+      isSellerApproved: true,
+      sellerProfileId: sellerId,
       sellerApplication: newApp
     };
     setCurrentUser(updatedUser);
@@ -815,16 +1029,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         u.id === currentUser.id || u.email.toLowerCase() === currentUser.email.toLowerCase() ? updatedUser : u
       )
     );
-
+    setCurrentRole('seller');
+    setActiveTab('seller-dashboard');
     setIsBecomeSellerOpen(false);
-    showToast(
-      'Application submitted successfully! Our platform curation team will review your studio within 24-48 hours.',
-      'success'
-    );
+
+    await saveUserToFirestore(updatedUser);
+
+    showToast('Your Artisan Studio is active! Welcome to your Seller Dashboard.', 'success');
     return { success: true };
   };
 
-  // Admin approves a seller application
   const approveSellerApplication = (applicationId: string) => {
     if (!isAdmin) {
       showToast('Only authorized platform admins can approve seller applications', 'error');
@@ -1463,6 +1677,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toggleUserStatus,
         sellerApplications,
         currentUserApplication,
+        quickOnboardSeller,
         applyToBecomeSeller,
         approveSellerApplication,
         rejectSellerApplication,
