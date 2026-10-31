@@ -430,7 +430,7 @@ npm run deploy
 * [x] **Fast-Track Seller Classification & Direct Dashboard Routing**
 * [x] **Seller Profile Completeness Progress Tracker**
 * [ ] **Automated Stripe Connect & Direct ACH Multi-Currency Clearing**
-* [ ] **Gemini 2.5 Flash AI Studio Bio & Product Story Assistant**
+* [ ] **Gemini 2.5 Flash Multimodal Artisan Bio & Craft Storytelling Assistant**
 * [ ] **WebXR Augmented Reality (AR) Tabletop Craft Preview**
 * [ ] **Progressive Web App (PWA) Offline Exhibition Mode**
 
